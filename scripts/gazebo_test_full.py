@@ -19,6 +19,9 @@ def set_joint_position(joint_publisher, position):
     joint_command = Float64()
     joint_command.data = position
     joint_publisher.publish(joint_command)
+
+
+
 class Simulation:
     def __init__(self, robot_num,max_velocity=0.5,stop_thresh=0.00,max_simulation_time_step = 1000):
 

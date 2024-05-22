@@ -1,30 +1,33 @@
-import pybullet as p
-import pybullet_data
-import time
+import json
+class Command:
+    def __init__(self,state="idle",vx=0,vy=0,vw=0,r1=0,r2=0,r3=0):
 
-# 启动 PyBullet 仿真器
-physicsClient = p.connect(p.GUI)
+        self.state = state
+        self.vx = vx
+        self.vy = vy
+        self.vw = vw
+        self.r1 = r1
+        self.r2 = r2
+        self.r3 = r3
+    def encode(self):
 
-# 添加资源路径
-p.setAdditionalSearchPath(pybullet_data.getDataPath())
+        return json.dumps(self.__dict__)
+    def set_attribute(self, **kwargs):
+        self.state = kwargs.get('state')
+        self.vx = float(kwargs.get('vx'))
+        self.vy = float(kwargs.get('vy'))
+        self.vw = float(kwargs.get('vw'))
+        self.r1 = float(kwargs.get('r1'))
+        self.r2 = float(kwargs.get('r2'))
+        self.r3 = float(kwargs.get('r3'))
+    def decode(self,command_string):
+        attribute_dict = json.loads(command_string)
+        self.set_attribute(**attribute_dict)
 
-# 设置重力
-p.setGravity(0, 0, -10)
 
-# 加载地面
-planeId = p.loadURDF("plane.urdf")
-
-
-ballId = p.loadURDF("/home/xinchi/catkin_ws/src/robomaster_arm_description/urdf/ball.urdf", basePosition=[0, 0, 1],
-                    globalScaling=1.0,
-                    physicsClientId=physicsClient,
-                    useMaximalCoordinates=False,
-                    flags=p.URDF_USE_MATERIAL_COLORS_FROM_MTL)
-p.changeDynamics(ballId, -1, contactStiffness=5000000000, contactDamping=5000)
-# 简单的仿真循环
-while True:
-    p.stepSimulation()
-    time.sleep(1./240.)
-
-# 断开连接
-# p.disconnect()
+command=Command()
+commandstr=command.encode()
+print(type(commandstr))
+newcommand=Command()
+newcommand.decode(commandstr)
+print(newcommand.vx)
