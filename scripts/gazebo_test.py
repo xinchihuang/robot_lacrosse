@@ -14,6 +14,10 @@ from geometry_msgs.msg import TransformStamped
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 import numpy as np
 import json
+from sensor_msgs.msg import Image
+from cv_bridge import CvBridge, CvBridgeError
+import cv2
+
 def calculate_rotation_angle(v1, v2):
     # 计算点积
     dot_product = np.dot(v1, v2)
@@ -28,6 +32,68 @@ def calculate_rotation_angle(v1, v2):
     angle = np.arctan2(cross_product, cos_theta)
 
     return angle
+
+def rotate_matrix_coordinate(r_x,r_y,r_z):
+    """
+    Right hand coordinate rotation matrix for coordinate rotation
+    Args:
+        r_x: rotation angle(degree) in x axis(counter-clockwise direction from zero) y->z
+        r_y: rotation angle in y axis x->z
+        r_z: rotation angle in z axis x->y
+
+    Returns: rotation matrix in x-y-z order
+
+    """
+    r_x=np.radians(-r_x)
+    r_y=np.radians(-r_y)
+    r_z=np.radians(-r_z)
+    Rotate_x=np.array([
+        [1, 0, 0],
+        [0, np.cos(r_x), -np.sin(r_x)],
+        [0, np.sin(r_x), np.cos(r_x)]
+    ])
+    Rotate_y=np.array([
+        [np.cos(r_y), 0, -np.sin(r_y)],
+        [0, 1, 0],
+        [np.sin(r_y), 0, np.cos(r_y)]
+    ])
+    Rotate_z=np.array([
+        [np.cos(r_z), -np.sin(r_z), 0],
+        [np.sin(r_z), np.cos(r_z), 0],
+        [0, 0, 1]
+    ])
+    return Rotate_z@Rotate_y@Rotate_x
+def rotate_matrix_vector(r_x,r_y,r_z):
+    """
+    Right hand coordinate rotation matrix for vector rotation
+    Args:
+        r_x: rotation angle(degree) in x axis(counter-clockwise direction from zero) y->z
+        r_y: rotation angle in y axis x->z
+        r_z: rotation angle in z axis x->y
+
+    Returns: rotation matrix in x-y-z order
+
+    """
+    r_x=np.radians(r_x)
+    r_y=np.radians(r_y)
+    r_z=np.radians(r_z)
+    Rotate_x=np.array([
+        [1, 0, 0],
+        [0, np.cos(r_x), -np.sin(r_x)],
+        [0, np.sin(r_x), np.cos(r_x)]
+    ])
+    Rotate_y=np.array([
+        [np.cos(r_y), 0, np.sin(r_y)],
+        [0, 1, 0],
+        [-np.sin(r_y), 0, np.cos(r_y)]
+    ])
+    Rotate_z=np.array([
+        [np.cos(r_z), -np.sin(r_z), 0],
+        [np.sin(r_z), np.cos(r_z), 0],
+        [0, 0, 1]
+    ])
+    return Rotate_z@Rotate_y@Rotate_x
+
 
 class Command:
     def __init__(self,state="idle",vx=0,vy=0,vw=0,r1=0,r2=-90,r3=180,target_x=0,target_y=0,rv1=0,rv2=0,rv3=0):
@@ -80,8 +146,9 @@ class Robot:
         self.reset_topic = rospy.Subscriber(f'/{self.robot_name}/command', String, self.reset_callback,
                                               queue_size=1)
         self.move_topic = rospy.Subscriber("/gazebo/model_states", ModelStates, self.move_callback, queue_size=1)
-
-
+        # self.target_topic = rospy.Subscriber("/gazebo/model_states", ModelStates, self.update_catch_target_pose, queue_size=1)
+        self.target_topic = rospy.Subscriber(f'/{self.robot_name}/image_raw', Image, self.update_catch_target_pose,
+                                             queue_size=1)
         # self.move_topic=rospy.Subscriber("/gazebo/model_states", ModelStates, self.move_callback, queue_size=1)
         # self.pub_revolute2 = rospy.Publisher(f'/{self.robot_name}/Revolute2_position_controller/command', Float64, queue_size=1)
         # self.pub_revolute6 = rospy.Publisher(f'/{self.robot_name}/Revolute6_position_controller/command', Float64, queue_size=1)
@@ -98,21 +165,25 @@ class Robot:
                                               queue_size=1)
 
         self.chassis_publish_topic=rospy.Publisher(f'/{self.robot_name}/cmd_vel', Twist, queue_size=1)
-
+        self.ball_memory=[]
         self.g = 10
         self.max_speed = 1.5
-        self.arm_pose = [-0.19, 0, 0.42]
+        self.camera_rpy=[1.57, -0.785, 0.0]
+        self.arm_pose = [-0.2, 0, 0.3]
+        self.frame_count=0
+        self.robot_pose=None
     def reset_callback(self, data):
-        rospy.loginfo("message from topic%s: %s", self.robot_name, data.data)
+        # rospy.loginfo("message from topic%s: %s", self.robot_name, data.data)
         command = Command()
         command.decode(data.data)
         self.state = command.state
         if command.state=="reset":
+            self.ball_memory=[]
             # x = self.initial_state.x
             # y = self.initial_state.y
             if self.robot_name=="robot2":
-                x = random.random()*5
-                y = random.random()*5
+                x = random.random()*3
+                y = random.random()*3
             else:
                 x = self.initial_state.x
                 y = self.initial_state.y
@@ -143,7 +214,7 @@ class Robot:
             state_msg.pose.orientation.w = q.w
             self.set_state(state_msg)
     def command_callback(self,data):
-        rospy.loginfo("message from topic%s: %s", self.robot_name, data.data)
+        # rospy.loginfo("message from topic%s: %s", self.robot_name, data.data)
         command = Command()
         command.decode(data.data)
         self.throw_target_pose = [command.target_x, command.target_y, 0]
@@ -163,6 +234,100 @@ class Robot:
         point.time_from_start = rospy.Duration(0.1)
         trajectory.points.append(point)
         self.pub_arm.publish(trajectory)
+    def update_catch_target_pose(self,data):
+        # Convert the ROS Image message to OpenCV2 format
+        # print(data)
+        present_time = rospy.Time.now().to_sec()
+
+        # Detect Ball
+        bridge = CvBridge()
+        cv_image = bridge.imgmsg_to_cv2(data, "bgr8")
+        hsv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2HSV)
+        lower_blue = np.array([100, 150, 50])
+        upper_blue = np.array([140, 255, 255])
+        mask = cv2.inRange(hsv_image, lower_blue, upper_blue)
+        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        x_pixel = -1
+        y_pixel = -1
+        for contour in contours:
+            M = cv2.moments(contour)
+            if M['m00'] != 0:
+                x_pixel = int(M['m10'] / M['m00'])
+                y_pixel = int(M['m01'] / M['m00'])
+                # if self.robot_name=="robot1":
+                #     print(self.robot_name,f"Centroid of the blue object: X Position {x_pixel}, Y Position {y_pixel}")
+        # Camera Intrinsic
+        fx = 500.39832201574455
+        fy = 500.39832201574455
+        cx = 500.5
+        cy = 500.5
+        if x_pixel==-1:
+            self.ball_memory=[]
+            self.frame_count=0
+        elif not x_pixel==-1:
+            self.frame_count+=1
+            # print(self.frame_count)
+
+            x_c = (cy - y_pixel) / fx
+            y_c = (x_pixel - cx) / fy
+            # if self.robot_name == "robot1":
+            #     print(self.robot_name, x_pixel, y_pixel)
+            #     print(self.robot_name, f"X Position {x_c}, Y Position {y_c}")
+            # Save ball's normalized position in camera frame (realsense camera coordinate)
+            self.ball_memory.append([x_c,y_c,present_time])
+            if len(self.ball_memory)>100:
+                if len(self.ball_memory)>100:
+                    self.ball_memory.pop(0)
+                # print(len(self.ball_memory))
+                t_start=self.ball_memory[0][2]
+                g_x=0
+                g_y=self.g*math.cos(math.pi/4)
+                g_z=-self.g*math.sin(math.pi/4)
+                A=[]
+                B=[]
+
+
+
+                for i in range(len(self.ball_memory)):
+                    t=self.ball_memory[i][2] - t_start
+                    A.append([1, t, 0, 0, -self.ball_memory[i][0],-self.ball_memory[i][0] * t])
+                    A.append([0, 0, 1, t, -self.ball_memory[i][1],-self.ball_memory[i][1] * t])
+                    B.append([0.5 * t * t * (g_z * self.ball_memory[i][0] - g_x)])
+                    B.append([0.5 * t * t * (g_z * self.ball_memory[i][1] - g_y)])
+
+
+                A_array = np.array(A)
+                B_array = np.array(B)
+                pseudo_inverse_A = np.linalg.pinv(A_array)
+                solved_parameters= pseudo_inverse_A@B_array
+                # print(pseudo_inverse_A@A_array)
+                x0_c,vx_c,y0_c,vy_c,z0_c,vz_c = solved_parameters[0][0],solved_parameters[1][0],solved_parameters[2][0],solved_parameters[3][0],solved_parameters[4][0],solved_parameters[5][0]
+
+                rotate_matrix=rotate_matrix_coordinate(45,0,90)
+                ball_position_c=np.array([x0_c,y0_c,z0_c])
+                ball_velocity_c=np.array([vx_c,vy_c,vz_c])
+                ball_position_w=rotate_matrix@ball_position_c
+                ball_velocity_w=rotate_matrix@ball_velocity_c
+                x_ball_w,y_ball_w,z_ball_w=ball_position_w[0],ball_position_w[1],ball_position_w[2]
+                vx_ball_w,vy_ball_w,vz_ball_w=ball_velocity_w[0],ball_position_w[1],ball_velocity_w[2]
+                x_ball_w=x_ball_w+0.1
+                z_ball_w=z_ball_w+0.15
+                # if self.robot_name == "robot1":
+                #     print(self.robot_name,len(self.ball_memory))
+                #     print(ball_position_w)
+                #     print(ball_velocity_w)
+                if vz_ball_w**2 - (z_ball_w-self.arm_pose[2]) * (-self.g)*2 >0:
+                    drop_t = (-vz_ball_w - math.sqrt(vz_ball_w**2 - (z_ball_w-self.arm_pose[2]) * (-self.g)*2 )) / (-self.g)
+                    target_x = x_ball_w + drop_t * vx_ball_w
+                    target_y = y_ball_w + drop_t * vy_ball_w
+                    self.catch_target_pose = [target_x, target_y, 0]
+                    if self.robot_name=="robot2":
+                        print(self.robot_name,target_x,target_y)
+                        # print(drop_t)
+                        print(self.robot_name, len(self.ball_memory))
+                        print(ball_position_w)
+                        print(ball_velocity_w)
+
     def move_callback(self,data):
         model_dict = {}
         for i in range(len(data.name)):
@@ -171,28 +336,32 @@ class Robot:
         robot_position = robot_pose.position
         ball_position = data.pose[model_dict['ball']].position
         ball_velocity = data.twist[model_dict['ball']].linear
-
+        # print(ball_position)
+        self.world_pose=robot_position
 
         q = Quaternion(robot_pose.orientation.x, robot_pose.orientation.y,
                        robot_pose.orientation.z, robot_pose.orientation.w)
         theta=q.to_euler(degrees=False)[0]
 
         msg = Twist()
+
+
+
         if self.state == "catch" and ball_position.z>self.arm_pose[2]:
-            t = (ball_velocity.z + math.sqrt(
-                ball_velocity.z * ball_velocity.z + (ball_position.z - self.arm_pose[2]) * self.g * 2)) / self.g
-            target_x = ball_position.x + t * ball_velocity.x
-            target_y = ball_position.y + t * ball_velocity.y
-            self.catch_target_pose = [target_x, target_y, 0]
+            # t = (ball_velocity.z + math.sqrt(
+            #     ball_velocity.z * ball_velocity.z + (ball_position.z - self.arm_pose[2]) * self.g * 2)) / self.g
+            # target_x = ball_position.x + t * ball_velocity.x
+            # target_y = ball_position.y + t * ball_velocity.y
+            # self.catch_target_pose = [target_x, target_y, 0]
+            # print(self.catch_target_pose)
 
-
-
+            theta=0
             bias_x = math.cos(-theta) * self.arm_pose[0]
-            bias_y = -math.sin(-theta) * self.arm_pose[0]
+            bias_y = -math.sin(-theta) * self.arm_pose[1]
             target_x = self.catch_target_pose[0]
             target_y = self.catch_target_pose[1]
-            robot_x = robot_position.x
-            robot_y = robot_position.y
+            robot_x = 0
+            robot_y = 0
             distance_x = target_x - robot_x - bias_x
             distance_y = target_y - robot_y - bias_y
 
@@ -200,6 +369,8 @@ class Robot:
             vy= min(abs(distance_y)*10,1)*self.max_speed*(distance_y)/abs(distance_y)
             x_relative = math.cos(theta) * vx + math.sin(theta) * vy
             y_relative = -math.sin(theta) * vx + math.cos(theta) * vy
+
+
             msg.linear.x=x_relative
             msg.linear.y=y_relative
             msg.linear.z = 0
@@ -228,8 +399,8 @@ class Ball:
     def reset_callback(self,data):
         command = Command()
         command.decode(data.data)
-        rospy.loginfo("message from topic%s: %s", "ball", data.data)
-        print(command.state)
+        # rospy.loginfo("message from topic%s: %s", "ball", data.data)
+        # print(command.state)
         if command.state == "reset":
             state_msg = ModelState()
             state_msg.model_name = 'ball'
@@ -258,8 +429,8 @@ if __name__ == "__main__":
     initial_state1.r2 = -90
     initial_state1.r3 = -180
     initial_state2=Command()
-    initial_state2.x = random.random()*5
-    initial_state2.y = random.random()*5
+    initial_state2.x = random.random()*3
+    initial_state2.y = random.random()*3
     initial_state2.w = 180
     initial_state2.r1 = 0
     initial_state2.r2 = -90

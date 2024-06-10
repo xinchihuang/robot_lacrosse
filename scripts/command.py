@@ -36,7 +36,7 @@ class Simulate:
     def timer_callback(self,data):
         self.model_states=data
     def simulate(self):
-        print(self.model_states)
+        # print(self.model_states)
         while not rospy.is_shutdown():
             data = self.model_states
             if data==None:
@@ -68,13 +68,20 @@ class Simulate:
                 target_v=math.sqrt(target_distance*10/math.sin(math.radians(60)))
                 target_w=target_v/0.15
                 time.sleep(1)
+
                 command = Command()
                 command.state = "rotate"
-
                 command.target_x = robot2_position.x
                 command.target_y = robot2_position.y
                 command_str = command.encode()
                 self.pub1.publish(command_str)
+                command = Command()
+                command.state = "rotate"
+                command.target_x = robot1_position.x
+                command.target_y = robot1_position.y
+                command_str = command.encode()
+                self.pub2.publish(command_str)
+
                 time.sleep(1)
                 command.state = "throw"
                 command.r1 = 0
@@ -97,13 +104,20 @@ class Simulate:
                 target_v = math.sqrt(target_distance * 10 / math.sin(math.radians(60)))
                 target_w = target_v / 0.15
                 time.sleep(1)
+
                 command = Command()
                 command.state = "rotate"
-
+                command.target_x = robot2_position.x
+                command.target_y = robot2_position.y
+                command_str = command.encode()
+                self.pub1.publish(command_str)
+                command = Command()
+                command.state = "rotate"
                 command.target_x = robot1_position.x
                 command.target_y = robot1_position.y
                 command_str = command.encode()
                 self.pub2.publish(command_str)
+
                 time.sleep(1)
                 command.state = "throw"
                 command.r1 = 0
