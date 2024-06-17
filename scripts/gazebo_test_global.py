@@ -17,52 +17,7 @@ import json
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 import cv2
-
-def calculate_rotation_angle(v1, v2):
-    # 计算点积
-    dot_product = np.dot(v1, v2)
-    # 计算向量的模
-    norm_v1 = np.linalg.norm(v1)
-    norm_v2 = np.linalg.norm(v2)
-    # 计算余弦值
-    cos_theta = dot_product / (norm_v1 * norm_v2)
-    # 计算叉积的 z 分量（二维向量叉积的结果是一个标量）
-    cross_product = v1[0] * v2[1] - v1[1] * v2[0]
-    # 使用 atan2 计算角度（结果在 -π 到 π 之间，对应 -180° 到 180°）
-    angle = np.arctan2(cross_product, cos_theta)
-
-    return angle
-
-def rotate_matrix_coordinate(r_x,r_y,r_z):
-    """
-    Right hand coordinate rotation matrix for coordinate rotation
-    Args:
-        r_x: rotation angle(degree) in x axis(counter-clockwise direction from zero) y->z
-        r_y: rotation angle in y axis x->z
-        r_z: rotation angle in z axis x->y
-
-    Returns: rotation matrix in x-y-z order
-
-    """
-    r_x=np.radians(-r_x)
-    r_y=np.radians(-r_y)
-    r_z=np.radians(-r_z)
-    Rotate_x=np.array([
-        [1, 0, 0],
-        [0, np.cos(r_x), -np.sin(r_x)],
-        [0, np.sin(r_x), np.cos(r_x)]
-    ])
-    Rotate_y=np.array([
-        [np.cos(r_y), 0, -np.sin(r_y)],
-        [0, 1, 0],
-        [np.sin(r_y), 0, np.cos(r_y)]
-    ])
-    Rotate_z=np.array([
-        [np.cos(r_z), -np.sin(r_z), 0],
-        [np.sin(r_z), np.cos(r_z), 0],
-        [0, 0, 1]
-    ])
-    return Rotate_z@Rotate_y@Rotate_x
+from utils import rotate_matrix_coordinate,calculate_rotation_angle
 
 class Command:
     def __init__(self,state="idle",vx=0,vy=0,vw=0,r1=0,r2=-90,r3=180,target_x=0,target_y=0,rv1=0,rv2=0,rv3=0):
@@ -124,7 +79,7 @@ class Robot:
         self.g = 10
         self.max_speed = 1.5
         self.camera_rpy=[1.57, -0.785, 0.0]
-        self.arm_pose = [-0.2, 0, 0.3]
+        self.arm_pose = [-0.2, 0, 0.17]
         self.frame_count=0
         self.robot_pose=None
     def reset_callback(self, data):
@@ -137,8 +92,8 @@ class Robot:
             # x = self.initial_state.x
             # y = self.initial_state.y
             if self.robot_name=="robot2":
-                x = random.random()*5
-                y = random.random()*5
+                x = 3
+                y = 0
             else:
                 x = self.initial_state.x
                 y = self.initial_state.y
@@ -272,8 +227,6 @@ class Ball:
 
 
 
-
-
 if __name__ == "__main__":
     rospy.init_node("robot_lacrosse")
 
@@ -286,8 +239,8 @@ if __name__ == "__main__":
     initial_state1.r2 = -90
     initial_state1.r3 = -180
     initial_state2=Command()
-    initial_state2.x = random.random()*5
-    initial_state2.y = random.random()*5
+    initial_state2.x = 3
+    initial_state2.y = 0
     initial_state2.w = 180
     initial_state2.r1 = 0
     initial_state2.r2 = -90

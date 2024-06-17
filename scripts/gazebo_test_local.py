@@ -17,53 +17,7 @@ import json
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 import cv2
-
-def calculate_rotation_angle(v1, v2):
-    # 计算点积
-    dot_product = np.dot(v1, v2)
-    # 计算向量的模
-    norm_v1 = np.linalg.norm(v1)
-    norm_v2 = np.linalg.norm(v2)
-    # 计算余弦值
-    cos_theta = dot_product / (norm_v1 * norm_v2)
-    # 计算叉积的 z 分量（二维向量叉积的结果是一个标量）
-    cross_product = v1[0] * v2[1] - v1[1] * v2[0]
-    # 使用 atan2 计算角度（结果在 -π 到 π 之间，对应 -180° 到 180°）
-    angle = np.arctan2(cross_product, cos_theta)
-
-    return angle
-
-def rotate_matrix_coordinate(r_x,r_y,r_z):
-    """
-    Right hand coordinate rotation matrix for coordinate rotation
-    Args:
-        r_x: rotation angle(degree) in x axis(counter-clockwise direction from zero) y->z
-        r_y: rotation angle in y axis x->z
-        r_z: rotation angle in z axis x->y
-
-    Returns: rotation matrix in x-y-z order
-
-    """
-    r_x=np.radians(-r_x)
-    r_y=np.radians(-r_y)
-    r_z=np.radians(-r_z)
-    Rotate_x=np.array([
-        [1, 0, 0],
-        [0, np.cos(r_x), -np.sin(r_x)],
-        [0, np.sin(r_x), np.cos(r_x)]
-    ])
-    Rotate_y=np.array([
-        [np.cos(r_y), 0, -np.sin(r_y)],
-        [0, 1, 0],
-        [np.sin(r_y), 0, np.cos(r_y)]
-    ])
-    Rotate_z=np.array([
-        [np.cos(r_z), -np.sin(r_z), 0],
-        [np.sin(r_z), np.cos(r_z), 0],
-        [0, 0, 1]
-    ])
-    return Rotate_z@Rotate_y@Rotate_x
-
+from utils import rotate_matrix_coordinate,calculate_rotation_angle,detect_ball,check_distance
 
 
 class Command:
@@ -112,45 +66,57 @@ class Robot:
         self.robot_name=robot_name
         self.state=initial_state.state
         self.initial_state=initial_state
+
+        # General Settings
+        self.g = 10
+        self.max_speed = 3
+        self.camera_bias=[0.1,0,0.15]
+        self.camera_rpy = [0, -0.785, 0.0]
+        self.arm_pose = [-0.30, 0, 0.3]
+        self.skip_frame=50
+        self.min_frame_count=20
+
+        self.save=False
+
+        # Camera relatetd
+        self.fx = 500.39832201574455
+        self.fy = 500.39832201574455
+        self.cx = 500.5
+        self.cy = 500.5
+
+
+
+
+
+        # Ros topics
         self.set_state = rospy.ServiceProxy('/gazebo/set_model_state', SetModelState)
         self.command_topic = rospy.Subscriber(f'/{self.robot_name}/command', String, self.command_callback, queue_size=1)
         self.reset_topic = rospy.Subscriber(f'/{self.robot_name}/command', String, self.reset_callback,
                                               queue_size=1)
         self.move_topic = rospy.Subscriber("/gazebo/model_states", ModelStates, self.move_callback, queue_size=1)
-        # self.target_topic = rospy.Subscriber("/gazebo/model_states", ModelStates, self.update_catch_target_pose, queue_size=1)
-        self.target_topic = rospy.Subscriber(f'/{self.robot_name}/image_raw', Image, self.local_controller,
+        # self.target_topic = rospy.Subscriber(f'/{self.robot_name}/image_raw', Image, self.local_controller,
+        #                                      queue_size=1)
+        self.target_topic = rospy.Subscriber("/gazebo/model_states", ModelStates, self.simulate_local_controller,
                                              queue_size=1)
-        # self.move_topic=rospy.Subscriber("/gazebo/model_states", ModelStates, self.move_callback, queue_size=1)
-        # self.pub_revolute2 = rospy.Publisher(f'/{self.robot_name}/Revolute2_position_controller/command', Float64, queue_size=1)
-        # self.pub_revolute6 = rospy.Publisher(f'/{self.robot_name}/Revolute6_position_controller/command', Float64, queue_size=1)
-        # self.pub_revolute10 = rospy.Publisher(f'/{self.robot_name}/Revolute10_position_controller/command', Float64, queue_size=1)
 
-        # self.pub_revolute2 = rospy.Publisher(f'/{self.robot_name}/Revolute2_position_controller/command', JointTrajectory,
-        #                                      queue_size=1)
-        # self.pub_revolute6 = rospy.Publisher(f'/{self.robot_name}/Revolute6_position_controller/command', JointTrajectory,
-        #                                      queue_size=1)
-        # self.pub_revolute10 = rospy.Publisher(f'/{self.robot_name}/Revolute10_position_controller/command', JointTrajectory,
-        #                                       queue_size=1)
+
         self.pub_arm = rospy.Publisher(f'/{self.robot_name}/Arm_position_controller/command',
                                               JointTrajectory,
                                               queue_size=1)
 
         self.chassis_publish_topic=rospy.Publisher(f'/{self.robot_name}/cmd_vel', Twist, queue_size=1)
+
+
+
+        #### Memorys
         self.ball_memory=[]
-        self.g = 10
-        self.max_speed = 1.5
-        self.camera_rpy=[0, -0.785, 0.0]
-        self.arm_pose = [-0.2, 0, 0.3]
         self.frame_count=0
         #x,y,theta,t
         self.robot_pose=[0,0,0,0]
         self.robot_pose_initial = [0, 0, 0, 0]
-
-        # vx,vy,omega
-        self.move_msg=[0,0,0]
-
-        #global coordinate
         self.robot_pose_global = [0, 0, 0, 0]
+        # vx,vy,omega
+        self.move_msg = [0, 0, 0]
 
 
 
@@ -160,15 +126,19 @@ class Robot:
         command.decode(data.data)
         self.state = command.state
         if command.state=="reset":
+            print("reset")
+            self.save=True
+
             self.ball_memory=[]
             self.robot_pose = [0, 0, 0, 0]
-
             self.move_msg = [0, 0, 0]
+            self.frame_count = 0
+            self.robot_pose_initial = self.robot_pose_global
             # x = self.initial_state.x
             # y = self.initial_state.y
             if self.robot_name=="robot2":
-                x = random.random()*3
-                y = random.random()*3
+                x = self.initial_state.x
+                y = self.initial_state.y
             else:
                 x = self.initial_state.x
                 y = self.initial_state.y
@@ -198,18 +168,13 @@ class Robot:
             state_msg.pose.orientation.z = q.z
             state_msg.pose.orientation.w = q.w
             self.set_state(state_msg)
+
     def command_callback(self,data):
         # rospy.loginfo("message from topic%s: %s", self.robot_name, data.data)
         command = Command()
         command.decode(data.data)
         self.throw_target_pose = [command.target_x, command.target_y, 0]
         self.state=command.state
-        # msg = Twist()
-        # msg.linear.x = command.vx
-        # msg.linear.y = command.vy
-        # msg.angular.z = command.vw
-        # self.chassis_publish_topic.publish(msg)
-
         trajectory = JointTrajectory()
         trajectory.joint_names = ['Revolute2', 'Revolute6', 'Revolute10']
         point = JointTrajectoryPoint()
@@ -219,37 +184,14 @@ class Robot:
         point.time_from_start = rospy.Duration(0.1)
         trajectory.points.append(point)
         self.pub_arm.publish(trajectory)
+
     def local_controller(self,data):
-        # Convert the ROS Image message to OpenCV2 format
-        # print(data)
+
         present_time = rospy.Time.now().to_sec()
         time_step=present_time-self.robot_pose[3]
 
-
-
-
-        # Detect Ball
-        bridge = CvBridge()
-        cv_image = bridge.imgmsg_to_cv2(data, "bgr8")
-        hsv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2HSV)
-        lower_blue = np.array([100, 150, 50])
-        upper_blue = np.array([140, 255, 255])
-        mask = cv2.inRange(hsv_image, lower_blue, upper_blue)
-        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        x_pixel = -1
-        y_pixel = -1
-        for contour in contours:
-            M = cv2.moments(contour)
-            if M['m00'] != 0:
-                x_pixel = int(M['m10'] / M['m00'])
-                y_pixel = int(M['m01'] / M['m00'])
-                # if self.robot_name=="robot1":
-                #     print(self.robot_name,f"Centroid of the blue object: X Position {x_pixel}, Y Position {y_pixel}")
         # Camera Intrinsic
-        fx = 500.39832201574455
-        fy = 500.39832201574455
-        cx = 500.5
-        cy = 500.5
+        x_pixel, y_pixel=detect_ball(data)
         try:
             if x_pixel==-1:
                 self.ball_memory=[]
@@ -270,15 +212,13 @@ class Robot:
                 # self.robot_pose = [robot_local[0] - robot_local_initial[0],
                 #                    robot_local[1] - robot_local_initial[1],
                 #                    0, self.robot_pose[3] + time_step]
-                x_c = (x_pixel - cx) / fx
-                y_c = (y_pixel - cy) / fy
-                # if self.robot_name == "robot1":
-                #     print(self.robot_name, x_pixel, y_pixel)
-                #     print(self.robot_name, f"X Position {x_c}, Y Position {y_c}")
-                # Save ball's normalized position in camera frame (realsense camera coordinate)
-                self.ball_memory.append([x_c,y_c,present_time])
-                if len(self.ball_memory)>50:
-                    # if len(self.ball_memory) >100:
+                x_c = (x_pixel - self.cx) / self.fx
+                y_c = (y_pixel - self.cy) / self.fy
+
+                if self.frame_count>self.skip_frame:
+                     self.ball_memory.append([x_c,y_c,present_time])
+                if len(self.ball_memory)>self.min_frame_count:
+                    # if len(self.ball_memory) >self.min_frame_count:
                     #     self.ball_memory.pop(0)
                     # print(len(self.ball_memory))
                     t_start=self.ball_memory[0][2]
@@ -287,26 +227,27 @@ class Robot:
                     g_z=-self.g*math.sin(math.pi/4)
                     A=[]
                     B=[]
-
-
-                    camera_angle=math.pi/4
+                    camera_angle=-self.camera_rpy[1]
                     for i in range(len(self.ball_memory)):
                         t=self.ball_memory[i][2] - t_start
-                        alpha=(self.ball_memory[i][0]+self.robot_pose[1])/(1+self.robot_pose[0]*math.cos(camera_angle))
-                        beta=(self.ball_memory[i][1]+self.robot_pose[0]*math.sin(camera_angle))/(1+self.robot_pose[0]*math.cos(camera_angle))
-                        # alpha=self.ball_memory[i][0]
-                        # beta=self.ball_memory[i][1]
+                        # print(t)
+                        # alpha=(self.ball_memory[i][0]+self.robot_pose[1])/(1+self.robot_pose[0]*math.cos(camera_angle))
+                        # beta=(self.ball_memory[i][1]+self.robot_pose[0]*math.sin(camera_angle))/(1+self.robot_pose[0]*math.cos(camera_angle))
+                        alpha=self.ball_memory[i][0]
+                        beta=self.ball_memory[i][1]
                         A.append([1, t, 0, 0, -alpha,-alpha * t])
                         A.append([0, 0, 1, t, -beta,-beta * t])
-                        B.append([0.5 * t * t * (g_z * alpha - g_x)])
-                        B.append([0.5 * t * t * (g_z * beta - g_y)])
+                        # B.append([0.5 * t * t * (g_z * alpha - g_x)])
+                        # B.append([0.5 * t * t * (g_z * beta - g_y)])
+                        B.append([0.5 * t * t * (g_z * alpha - g_x)+(-self.robot_pose[0]*math.cos(math.pi/4)*alpha+self.robot_pose[1])])
+                        B.append([0.5 * t * t * (g_z * beta - g_y)+(-self.robot_pose[0]*math.cos(math.pi/4)*beta)-(-self.robot_pose[0]*math.sin(math.pi/4))])
 
 
                     A_array = np.array(A)
                     B_array = np.array(B)
                     pseudo_inverse_A = np.linalg.pinv(A_array)
                     solved_parameters= pseudo_inverse_A@B_array
-                    # print(pseudo_inverse_A@A_array)
+
                     x0_c,vx_c,y0_c,vy_c,z0_c,vz_c = solved_parameters[0][0],solved_parameters[1][0],solved_parameters[2][0],solved_parameters[3][0],solved_parameters[4][0],solved_parameters[5][0]
 
                     rotate_matrix=rotate_matrix_coordinate(45,0,90)
@@ -315,34 +256,178 @@ class Robot:
                     ball_position_w=rotate_matrix@ball_position_c
                     ball_velocity_w=rotate_matrix@ball_velocity_c
                     x_ball_w,y_ball_w,z_ball_w=ball_position_w[0],ball_position_w[1],ball_position_w[2]
-                    vx_ball_w,vy_ball_w,vz_ball_w=ball_velocity_w[0],ball_position_w[1],ball_velocity_w[2]
-                    x_ball_w=x_ball_w+0.1
-                    z_ball_w=z_ball_w+0.15
+                    vx_ball_w,vy_ball_w,vz_ball_w=ball_velocity_w[0],ball_velocity_w[1],ball_velocity_w[2]
+                    x_ball_w=x_ball_w+self.camera_bias[0]
+                    z_ball_w=z_ball_w+self.camera_bias[2]
                     target_x = 0
                     target_y = 0
+
                     if vz_ball_w**2 - (z_ball_w-self.arm_pose[2]) * (-self.g)*2 >0:
                         drop_t = (-vz_ball_w - math.sqrt(vz_ball_w**2 - (z_ball_w-self.arm_pose[2]) * (-self.g)*2 )) / (-self.g)
-                        target_x = x_ball_w + drop_t * vx_ball_w
-                        target_y = y_ball_w + drop_t * vy_ball_w
-                        self.catch_target_pose = [target_x, target_y, 0]
-                    bias_x =self.arm_pose[0]
-                    bias_y =self.arm_pose[1]
-                    distance_x = target_x - bias_x
-                    distance_y = target_y - bias_y
-                    vx= min(abs(distance_x)*10,1)*self.max_speed*(distance_x)/abs(distance_x)
-                    vy= min(abs(distance_y)*10,1)*self.max_speed*(distance_y)/abs(distance_y)
+                        target_x = x_ball_w + drop_t * vx_ball_w - self.arm_pose[0]
+                        target_y = y_ball_w + drop_t * vy_ball_w - self.arm_pose[1]
+                    distance_x = target_x - self.robot_pose[0]
+                    distance_y = target_y - self.robot_pose[1]
+                    vx= min(abs(distance_x)*1,1)*self.max_speed*(distance_x)/abs(distance_x)
+                    vy= min(abs(distance_y)*1,1)*self.max_speed*(distance_y)/abs(distance_y)
                     self.move_msg=[vx,vy,0]
 
-                    if self.robot_name == "robot2":
-                        print("velocity",[vx, vy, 0])
-                        print(len(self.ball_memory))
-                        print(self.robot_pose)
-                        print(self.robot_pose_global)
-                        print(self.robot_pose_initial)
+                    # if self.robot_name == "robot2":
+                        # print(solved_parameters.T)
+                        # print("velocity",[vx, vy, 0])
+                        # print(self.ball_memory[-1])
+                        # print(self.ball_memory[-1][2] - t_start)
+                        # print(x_pixel, y_pixel)
+                        # print(target_x+self.arm_pose[0],target_y+self.arm_pose[1])
+                        # print(ball_velocity_w)
+                        # print(self.robot_pose)
+                        # print(self.robot_pose_global)
+                        # print(self.robot_pose_initial)
 
         except:
             self.move_msg = [0, 0, 0]
+    def simulate_local_controller(self,data):
+        present_time = rospy.Time.now().to_sec()
+        time_step = present_time - self.robot_pose[3]
 
+        # Camera Intrinsic
+        # x_pixel, y_pixel = detect_ball(data)
+
+        model_dict = {}
+        for i in range(len(data.name)):
+            model_dict[data.name[i]] = i
+        robot_pose = data.pose[model_dict[self.robot_name]]
+        robot_position = robot_pose.position
+        ball_position = data.pose[model_dict['ball']].position
+
+        q = Quaternion(robot_pose.orientation.x, robot_pose.orientation.y,
+                       robot_pose.orientation.z, robot_pose.orientation.w)
+        theta = q.to_euler(degrees=True)[0]
+        relative_x_w = ball_position.x - robot_position.x - self.camera_bias[0]
+        relative_y_w = ball_position.y - robot_position.y - self.camera_bias[1]
+        relative_z_w = ball_position.z - robot_position.z - self.camera_bias[2]
+        relative_w=np.array([relative_x_w, relative_y_w, relative_z_w])
+        # print(theta)
+        relative_c=rotate_matrix_coordinate(0, 0, theta)@relative_w
+        # print(relative_c)
+        camera_coordinates_w= rotate_matrix_coordinate(0,45,-90)@relative_c
+        f=camera_coordinates_w[2]
+        # print(f)
+        camera_coordinates_c=[camera_coordinates_w[0]/f,camera_coordinates_w[1]/f,camera_coordinates_w[2]/f]
+
+
+
+
+        try:
+            if relative_c[2] < 0.6 or relative_c[0]<0:
+                # if len(self.ball_memory) > 300 and self.save == True:
+                #     print(self.ball_memory)
+                #     np.save(self.robot_name + ".npy", np.array(self.ball_memory))
+                #     self.save = False
+                self.ball_memory = []
+                self.frame_count = 0
+                self.robot_pose_initial = self.robot_pose_global
+                self.robot_pose = [0, 0, 0, 0]
+
+
+            else:
+                self.frame_count += 1
+                # print(self.frame_count)
+
+                self.robot_pose = [self.robot_pose[0] + self.move_msg[0] * time_step,
+                                   self.robot_pose[1] + self.move_msg[1] * time_step,
+                                   self.robot_pose[2] + self.move_msg[2] * time_step, self.robot_pose[3] + time_step]
+                # robot_theta = self.robot_pose_global[2]
+                # # print(math.degrees(robot_theta))
+                # rotate_matrix = rotate_matrix_coordinate(0, 0, math.degrees(robot_theta))
+                # robot_local = rotate_matrix @ np.array([self.robot_pose_global[0],self.robot_pose_global[1],0])
+                # robot_local_initial = rotate_matrix @ np.array([self.robot_pose_initial[0],self.robot_pose_initial[1],0])
+                # self.robot_pose = [robot_local[0] - robot_local_initial[0],
+                #                    robot_local[1] - robot_local_initial[1],
+                #                    0, self.robot_pose[3] + time_step]
+
+                x_c=camera_coordinates_c[0]
+                y_c=camera_coordinates_c[1]
+                # self.ball_memory.append([x_c, y_c, present_time])
+                if self.frame_count>self.skip_frame and self.frame_count%10==0:
+                     self.ball_memory.append([x_c,y_c,present_time])
+                if len(self.ball_memory) > self.min_frame_count:
+                    # if len(self.ball_memory) >self.min_frame_count:
+                    #     self.ball_memory.pop(0)
+                    # print(len(self.ball_memory))
+                    t_start = self.ball_memory[0][2]
+                    g_x = 0
+                    g_y = self.g * math.cos(math.pi / 4)
+                    g_z = -self.g * math.sin(math.pi / 4)
+                    A = []
+                    B = []
+                    camera_angle = -self.camera_rpy[1]
+                    for i in range(len(self.ball_memory)):
+                        t = self.ball_memory[i][2] - t_start
+                        # print(t)
+                        # alpha=(self.ball_memory[i][0]+self.robot_pose[1])/(1+self.robot_pose[0]*math.cos(camera_angle))
+                        # beta=(self.ball_memory[i][1]+self.robot_pose[0]*math.sin(camera_angle))/(1+self.robot_pose[0]*math.cos(camera_angle))
+                        alpha = self.ball_memory[i][0]
+                        beta = self.ball_memory[i][1]
+                        A.append([1, t, 0, 0, -alpha, -alpha * t])
+                        A.append([0, 0, 1, t, -beta, -beta * t])
+                        # B.append([0.5 * t * t * (g_z * alpha - g_x)])
+                        # B.append([0.5 * t * t * (g_z * beta - g_y)])
+                        B.append([0.5 * t * t * (g_z * alpha - g_x) + (
+                                    -self.robot_pose[0] * math.cos(math.pi / 4) * alpha + self.robot_pose[1])])
+                        B.append([0.5 * t * t * (g_z * beta - g_y) + (
+                                    -self.robot_pose[0] * math.cos(math.pi / 4) * beta) - (
+                                              -self.robot_pose[0] * math.sin(math.pi / 4))])
+
+                    A_array = np.array(A)
+                    B_array = np.array(B)
+                    pseudo_inverse_A = np.linalg.pinv(A_array)
+                    solved_parameters = pseudo_inverse_A @ B_array
+
+                    x0_c, vx_c, y0_c, vy_c, z0_c, vz_c = solved_parameters[0][0], solved_parameters[1][0], \
+                    solved_parameters[2][0], solved_parameters[3][0], solved_parameters[4][0], solved_parameters[5][0]
+
+                    rotate_matrix = rotate_matrix_coordinate(45, 0, 90)
+                    ball_position_c = np.array([x0_c, y0_c, z0_c])
+                    ball_velocity_c = np.array([vx_c, vy_c, vz_c])
+                    ball_position_w = rotate_matrix @ ball_position_c
+                    ball_velocity_w = rotate_matrix @ ball_velocity_c
+                    x_ball_w, y_ball_w, z_ball_w = ball_position_w[0], ball_position_w[1], ball_position_w[2]
+                    vx_ball_w, vy_ball_w, vz_ball_w = ball_velocity_w[0], ball_velocity_w[1], ball_velocity_w[2]
+                    x_ball_w = x_ball_w + self.camera_bias[0]
+                    z_ball_w = z_ball_w + self.camera_bias[2]
+                    target_x = 0
+                    target_y = 0
+                    if vz_ball_w ** 2 - (z_ball_w - self.arm_pose[2]) * (-self.g) * 2 > 0:
+                        drop_t = (-vz_ball_w - math.sqrt(
+                            vz_ball_w ** 2 - (z_ball_w - self.arm_pose[2]) * (-self.g) * 2)) / (-self.g)
+                        target_x = x_ball_w + drop_t * vx_ball_w - self.arm_pose[0]
+                        target_y = y_ball_w + drop_t * vy_ball_w - self.arm_pose[1]
+                    distance_x = target_x - self.robot_pose[0]
+                    distance_y = target_y - self.robot_pose[1]
+                    vx = min(abs(distance_x) * 1, 1) * self.max_speed * (distance_x) / abs(distance_x)
+                    vy = min(abs(distance_y) * 1, 1) * self.max_speed * (distance_y) / abs(distance_y)
+                    self.move_msg = [vx, vy, 0]
+
+                    # if self.robot_name == "robot2":
+                        # print(x_ball_w, y_ball_w, z_ball_w)
+                        # print(relative_w)
+                        # print([relative_x_w, relative_y_w,relative_z_w])
+                        # print("velocity",[vx, vy, 0])
+                        # print(self.ball_memory[-1])
+                        # print(self.ball_memory[-1][2] - t_start)
+                        # print(x_pixel, y_pixel)
+                        # print(camera_coordinates_c)
+                        # print(len(self.ball_memory))
+                        # print(self.ball_memory[-1])
+                        # print(target_x,target_y)
+                        # print(ball_velocity_w)
+                        # print(self.robot_pose)
+                        # print(self.robot_pose_global)
+                        # print(self.robot_pose_initial)
+
+        except:
+            self.move_msg = [0, 0, 0]
     def move_callback(self,data):
         model_dict = {}
         for i in range(len(data.name)):
@@ -350,9 +435,6 @@ class Robot:
         robot_pose=data.pose[model_dict[self.robot_name]]
         robot_position = robot_pose.position
         ball_position = data.pose[model_dict['ball']].position
-        ball_velocity = data.twist[model_dict['ball']].linear
-        # print(ball_position)
-
 
         q = Quaternion(robot_pose.orientation.x, robot_pose.orientation.y,
                        robot_pose.orientation.z, robot_pose.orientation.w)
@@ -369,6 +451,9 @@ class Robot:
             msg.linear.z = 0
             msg.angular.z = 0
         elif self.state == "rotate":
+            self.ball_memory = []
+            self.robot_pose = [0, 0, 0, 0]
+            self.move_msg = [0, 0, 0]
             target_direction = [self.throw_target_pose[0] - robot_position.x,
                                 self.throw_target_pose[1] - robot_position.y]
             self_direction = [math.cos(theta), math.sin(theta)]
@@ -389,6 +474,9 @@ class Ball:
     def __init__(self):
         self.set_state = rospy.ServiceProxy('/gazebo/set_model_state', SetModelState)
         self.reset_topic= rospy.Subscriber(f'/ball/command', String, self.reset_callback, queue_size=1)
+        self.record_topic = rospy.Subscriber("/gazebo/model_states", ModelStates, self.ball_recorder, queue_size=1)
+        self.landing_pose=[]
+        self.record=True
     def reset_callback(self,data):
         command = Command()
         command.decode(data.data)
@@ -397,7 +485,7 @@ class Ball:
         if command.state == "reset":
             state_msg = ModelState()
             state_msg.model_name = 'ball'
-            state_msg.pose.position.x = -0.2
+            state_msg.pose.position.x = -2.2
             state_msg.pose.position.y = 0
             state_msg.pose.position.z = 0.6
             state_msg.twist.linear.x = 0.0
@@ -406,6 +494,33 @@ class Ball:
             self.set_state(state_msg)
             # rospy.sleep(1)
 
+    def ball_recorder(self, data):
+
+        model_dict = {}
+        for i in range(len(data.name)):
+            model_dict[data.name[i]] = i
+
+        robot1_pose = data.pose[model_dict['robot1']]
+        robot2_pose = data.pose[model_dict['robot2']]
+        robot1_position = robot1_pose.position
+        robot2_position = robot2_pose.position
+        ball_position = data.pose[model_dict['ball']].position
+        # # if ball_position.z < 0.290073:
+        # print(ball_position.z)
+
+        if check_distance(robot2_position, ball_position) >= 1:
+            self.record=True
+        if check_distance(robot2_position, ball_position) < 1 and ball_position.z < 0.3:
+            if self.record==True:
+                print(ball_position.z)
+                self.record=False
+                q = Quaternion(robot2_pose.orientation.x, robot2_pose.orientation.y,
+                               robot2_pose.orientation.z, robot2_pose.orientation.w)
+                theta = q.to_euler(degrees=False)[0]
+                self.landing_pose.append(
+                    [ball_position.x, ball_position.y, ball_position.z, robot2_position.x, robot2_position.y, theta])
+                if len(self.landing_pose) % 20 == 0:
+                    np.save("saved_pose.npy", self.landing_pose)
 
 
 
@@ -415,15 +530,15 @@ if __name__ == "__main__":
 
 
     initial_state1=Command()
-    initial_state1.x = 0
+    initial_state1.x = -2
     initial_state1.y = 0
     initial_state1.w = 0
     initial_state1.r1 = 0
     initial_state1.r2 = -90
     initial_state1.r3 = -180
     initial_state2=Command()
-    initial_state2.x = random.random()*3
-    initial_state2.y = random.random()*3
+    initial_state2.x =2
+    initial_state2.y = 0
     initial_state2.w = 180
     initial_state2.r1 = 0
     initial_state2.r2 = -90

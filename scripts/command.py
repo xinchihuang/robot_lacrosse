@@ -10,6 +10,20 @@ from gazebo_msgs.srv import SetModelState
 from squaternion import Quaternion
 from std_msgs.msg import Float64,String
 from gazebo_test import Command
+import numpy as np
+
+def recorder(data,save_file="saved_pose.npy"):
+    pose_list=[]
+    model_dict = {}
+    for i in range(len(data.name)):
+        model_dict[data.name[i]] = i
+    ball_position = data.pose[model_dict['ball']].position
+    robot1_position = data.pose[model_dict['robot1']].position
+    robot2_position = data.pose[model_dict['robot2']].position
+    pose_list.append([ball_position.x,ball_position.y,robot2_position.x,robot2_position.y])
+
+    np.append(save_file,np.array(pose_list))
+
 
 
 def check_distance(position1,position2):
@@ -33,6 +47,9 @@ class Simulate:
         self.pub1.publish(command_str)
         self.pub2.publish(command_str)
         self.pub3.publish(command_str)
+
+
+        self.landing_pose=[]
     def timer_callback(self,data):
         self.model_states=data
     def simulate(self):
@@ -44,7 +61,6 @@ class Simulate:
             model_dict = {}
             for i in range(len(data.name)):
                 model_dict[data.name[i]] = i
-            ball_position = data.pose[model_dict['ball']].position
 
             robot1_pose = data.pose[model_dict['robot1']]
             robot2_pose = data.pose[model_dict['robot2']]
@@ -54,8 +70,17 @@ class Simulate:
             # print(1, check_distance(robot1_position, ball_position))
             # print(2, check_distance(robot2_position, ball_position))
             ball_position = data.pose[model_dict['ball']].position
-
-            if ball_position.z < 0.2:
+            # if ball_position.z < 0.290073:
+            #     print(ball_position.z)
+            # if check_distance(robot2_position, ball_position) < 1 and 0.25 < ball_position.z < 0.35:
+            #     q = Quaternion(robot2_pose.orientation.x, robot2_pose.orientation.y,
+            #                    robot2_pose.orientation.z, robot2_pose.orientation.w)
+            #     theta = q.to_euler(degrees=False)[0]
+            #     self.landing_pose.append(
+            #         [ball_position.x, ball_position.y, ball_position.z, robot2_position.x, robot2_position.y, theta])
+            #     if len(self.landing_pose) % 2 == 0:
+            #         np.save("saved_pose.npy", self.landing_pose)
+            if ball_position.z < 0.290073:
                 command = Command()
                 command.state = "reset"
                 command_str = command.encode()
@@ -65,10 +90,9 @@ class Simulate:
                 time.sleep(1)
             elif check_distance(robot1_position, ball_position) < 0.5:
                 target_distance=check_distance(robot1_position, robot2_position)
-                target_v=math.sqrt(target_distance*10/math.sin(math.radians(60)))
-                target_w=target_v/0.15
+                target_v=math.sqrt(target_distance*10/math.sin(math.radians(45)))
+                target_w=target_v/0.145
                 time.sleep(1)
-
                 command = Command()
                 command.state = "rotate"
                 command.target_x = robot2_position.x
@@ -81,7 +105,6 @@ class Simulate:
                 command.target_y = robot1_position.y
                 command_str = command.encode()
                 self.pub2.publish(command_str)
-
                 time.sleep(1)
                 command.state = "throw"
                 command.r1 = 0
