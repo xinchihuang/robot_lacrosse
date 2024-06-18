@@ -70,11 +70,11 @@ class Robot:
         # General Settings
         self.g = 10
         self.max_speed = 3
-        self.camera_bias=[0.1,0,0.15]
+        self.camera_bias=[0.0,0,0.0]
         self.camera_rpy = [0, -0.785, 0.0]
-        self.arm_pose = [-0.30, 0, 0.3]
-        self.skip_frame=50
-        self.min_frame_count=20
+        self.arm_pose = [-0.21, 0, 0.3]
+        self.skip_frame=10
+        self.min_frame_count=10
 
         self.save=False
 
@@ -110,6 +110,7 @@ class Robot:
 
         #### Memorys
         self.ball_memory=[]
+        self.move_target=[0,0]
         self.frame_count=0
         #x,y,theta,t
         self.robot_pose=[0,0,0,0]
@@ -130,8 +131,9 @@ class Robot:
             self.save=True
 
             self.ball_memory=[]
-            self.robot_pose = [0, 0, 0, 0]
+            self.robot_pose = [0, 0, 0, rospy.Time.now().to_sec()]
             self.move_msg = [0, 0, 0]
+            self.move_target = [0, 0]
             self.frame_count = 0
             self.robot_pose_initial = self.robot_pose_global
             # x = self.initial_state.x
@@ -139,6 +141,7 @@ class Robot:
             if self.robot_name=="robot2":
                 x = self.initial_state.x
                 y = self.initial_state.y
+                # self.state="catch"
             else:
                 x = self.initial_state.x
                 y = self.initial_state.y
@@ -287,9 +290,20 @@ class Robot:
         except:
             self.move_msg = [0, 0, 0]
     def simulate_local_controller(self,data):
+
         present_time = rospy.Time.now().to_sec()
         time_step = present_time - self.robot_pose[3]
-
+        self.robot_pose = [self.robot_pose[0] + self.move_msg[0] * time_step,
+                           self.robot_pose[1] + self.move_msg[1] * time_step,
+                           self.robot_pose[2] + self.move_msg[2] * time_step, self.robot_pose[3] + time_step]
+        robot_theta = self.robot_pose_global[2]
+        # print(math.degrees(robot_theta))
+        # rotate_matrix = rotate_matrix_coordinate(0, 0, math.degrees(robot_theta))
+        # robot_local = rotate_matrix @ np.array([self.robot_pose_global[0],self.robot_pose_global[1],0])
+        # robot_local_initial = rotate_matrix @ np.array([self.robot_pose_initial[0],self.robot_pose_initial[1],0])
+        # self.robot_pose = [robot_local[0] - robot_local_initial[0],
+        #                    robot_local[1] - robot_local_initial[1],
+        #                    0, self.robot_pose[3] + time_step]
         # Camera Intrinsic
         # x_pixel, y_pixel = detect_ball(data)
 
@@ -303,12 +317,13 @@ class Robot:
         q = Quaternion(robot_pose.orientation.x, robot_pose.orientation.y,
                        robot_pose.orientation.z, robot_pose.orientation.w)
         theta = q.to_euler(degrees=True)[0]
-        relative_x_w = ball_position.x - robot_position.x - self.camera_bias[0]
-        relative_y_w = ball_position.y - robot_position.y - self.camera_bias[1]
-        relative_z_w = ball_position.z - robot_position.z - self.camera_bias[2]
+        relative_x_w = ball_position.x - robot_position.x
+        relative_y_w = ball_position.y - robot_position.y
+        relative_z_w = ball_position.z - robot_position.z
         relative_w=np.array([relative_x_w, relative_y_w, relative_z_w])
         # print(theta)
         relative_c=rotate_matrix_coordinate(0, 0, theta)@relative_w
+        relative_c=np.array([relative_c[0]-self.camera_bias[0], relative_c[1]-self.camera_bias[1], relative_c[2]-self.camera_bias[2]])
         # print(relative_c)
         camera_coordinates_w= rotate_matrix_coordinate(0,45,-90)@relative_c
         f=camera_coordinates_w[2]
@@ -319,24 +334,14 @@ class Robot:
 
 
         try:
-            if relative_c[2] < 0.6 or relative_c[0]<0:
-                # if len(self.ball_memory) > 300 and self.save == True:
-                #     print(self.ball_memory)
-                #     np.save(self.robot_name + ".npy", np.array(self.ball_memory))
-                #     self.save = False
+            if relative_c[2] < 0.5 or relative_c[0]<0:
                 self.ball_memory = []
                 self.frame_count = 0
                 self.robot_pose_initial = self.robot_pose_global
-                self.robot_pose = [0, 0, 0, 0]
-
-
+                # self.robot_pose = [0, 0, 0, 0]
             else:
                 self.frame_count += 1
                 # print(self.frame_count)
-
-                self.robot_pose = [self.robot_pose[0] + self.move_msg[0] * time_step,
-                                   self.robot_pose[1] + self.move_msg[1] * time_step,
-                                   self.robot_pose[2] + self.move_msg[2] * time_step, self.robot_pose[3] + time_step]
                 # robot_theta = self.robot_pose_global[2]
                 # # print(math.degrees(robot_theta))
                 # rotate_matrix = rotate_matrix_coordinate(0, 0, math.degrees(robot_theta))
@@ -349,7 +354,7 @@ class Robot:
                 x_c=camera_coordinates_c[0]
                 y_c=camera_coordinates_c[1]
                 # self.ball_memory.append([x_c, y_c, present_time])
-                if self.frame_count>self.skip_frame and self.frame_count%10==0:
+                if self.frame_count>self.skip_frame and self.frame_count%10==0 and self.state=="catch":
                      self.ball_memory.append([x_c,y_c,present_time])
                 if len(self.ball_memory) > self.min_frame_count:
                     # if len(self.ball_memory) >self.min_frame_count:
@@ -403,28 +408,33 @@ class Robot:
                             vz_ball_w ** 2 - (z_ball_w - self.arm_pose[2]) * (-self.g) * 2)) / (-self.g)
                         target_x = x_ball_w + drop_t * vx_ball_w - self.arm_pose[0]
                         target_y = y_ball_w + drop_t * vy_ball_w - self.arm_pose[1]
-                    distance_x = target_x - self.robot_pose[0]
-                    distance_y = target_y - self.robot_pose[1]
-                    vx = min(abs(distance_x) * 1, 1) * self.max_speed * (distance_x) / abs(distance_x)
-                    vy = min(abs(distance_y) * 1, 1) * self.max_speed * (distance_y) / abs(distance_y)
-                    self.move_msg = [vx, vy, 0]
+                    self.move_target=[target_x,target_y]
 
-                    # if self.robot_name == "robot2":
-                        # print(x_ball_w, y_ball_w, z_ball_w)
-                        # print(relative_w)
-                        # print([relative_x_w, relative_y_w,relative_z_w])
-                        # print("velocity",[vx, vy, 0])
-                        # print(self.ball_memory[-1])
-                        # print(self.ball_memory[-1][2] - t_start)
-                        # print(x_pixel, y_pixel)
-                        # print(camera_coordinates_c)
-                        # print(len(self.ball_memory))
-                        # print(self.ball_memory[-1])
-                        # print(target_x,target_y)
-                        # print(ball_velocity_w)
-                        # print(self.robot_pose)
-                        # print(self.robot_pose_global)
-                        # print(self.robot_pose_initial)
+
+            distance_x = self.move_target[0] - self.robot_pose[0]
+            distance_y = self.move_target[1] - self.robot_pose[1]
+            vx = min(abs(distance_x) * 1, 1) * self.max_speed * (distance_x) / abs(distance_x)
+            vy = min(abs(distance_y) * 1, 1) * self.max_speed * (distance_y) / abs(distance_y)
+            if self.robot_name == "robot2":
+                # print(x_ball_w, y_ball_w, z_ball_w)
+                # print(relative_w)
+                # print([relative_x_w, relative_y_w,relative_z_w])
+                # print("velocity",[vx, vy, 0])
+                # print(self.ball_memory[-1])
+                # print(self.ball_memory[-1][2] - t_start)
+                # print(x_pixel, y_pixel)
+                # print(camera_coordinates_c)
+                # print(len(self.ball_memory))
+                # print(self.ball_memory[-1])
+                # print(target_x,target_y)
+                # print(ball_velocity_w)
+                # print(self.robot_pose)
+                # print(self.robot_pose_global)
+                # print(self.robot_pose_initial)
+                print(self.robot_pose)
+                print(self.move_target)
+                print(self.move_msg)
+            self.move_msg = [vx, vy, 0]
 
         except:
             self.move_msg = [0, 0, 0]
@@ -485,9 +495,9 @@ class Ball:
         if command.state == "reset":
             state_msg = ModelState()
             state_msg.model_name = 'ball'
-            state_msg.pose.position.x = -2.2
+            state_msg.pose.position.x = 2.2
             state_msg.pose.position.y = 0
-            state_msg.pose.position.z = 0.6
+            state_msg.pose.position.z = 0.5
             state_msg.twist.linear.x = 0.0
             state_msg.twist.linear.y = 0.0
             state_msg.twist.linear.z = 0.0
@@ -530,7 +540,7 @@ if __name__ == "__main__":
 
 
     initial_state1=Command()
-    initial_state1.x = -2
+    initial_state1.x = 0
     initial_state1.y = 0
     initial_state1.w = 0
     initial_state1.r1 = 0

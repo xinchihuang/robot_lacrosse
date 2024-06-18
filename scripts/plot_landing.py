@@ -29,7 +29,7 @@ for i in range(len(pose_array)):
     theta=pose[5]
     # print(pose)
 
-    ball_relative_pos_x=pose[0]-(pose[3]+0.25)
+    ball_relative_pos_x=pose[0]-(pose[3])
     ball_relative_pos_y=pose[1]-(pose[4])
     if abs(ball_relative_pos_x)>0.5:
         continue

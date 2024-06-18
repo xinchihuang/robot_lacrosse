@@ -93,6 +93,7 @@ class Simulate:
                 target_v=math.sqrt(target_distance*10/math.sin(math.radians(45)))
                 target_w=target_v/0.145
                 time.sleep(1)
+
                 command = Command()
                 command.state = "rotate"
                 command.target_x = robot2_position.x
@@ -105,6 +106,7 @@ class Simulate:
                 command.target_y = robot1_position.y
                 command_str = command.encode()
                 self.pub2.publish(command_str)
+
                 time.sleep(1)
                 command.state = "throw"
                 command.r1 = 0
@@ -124,7 +126,7 @@ class Simulate:
                 self.pub2.publish(command_str)
             elif check_distance(robot2_position, ball_position) < 0.5:
                 target_distance = check_distance(robot1_position, robot2_position)
-                target_v = math.sqrt(target_distance * 10 / math.sin(math.radians(60)))
+                target_v = math.sqrt(target_distance * 10 / math.sin(math.radians(45)))
                 target_w = target_v / 0.15
                 time.sleep(1)
 
