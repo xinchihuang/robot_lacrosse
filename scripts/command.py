@@ -80,7 +80,7 @@ class Simulate:
             #         [ball_position.x, ball_position.y, ball_position.z, robot2_position.x, robot2_position.y, theta])
             #     if len(self.landing_pose) % 2 == 0:
             #         np.save("saved_pose.npy", self.landing_pose)
-            if ball_position.z < 0.290073:
+            if ball_position.z < 0.27:
                 command = Command()
                 command.state = "reset"
                 command_str = command.encode()
@@ -90,8 +90,8 @@ class Simulate:
                 time.sleep(1)
             elif check_distance(robot1_position, ball_position) < 0.5:
                 target_distance=check_distance(robot1_position, robot2_position)
-                target_v=math.sqrt(target_distance*10/math.sin(math.radians(45)))
-                target_w=target_v/0.145
+                target_v=math.sqrt(target_distance*10/2)/math.sin(math.radians(45))
+                target_w=target_v/0.11
                 time.sleep(1)
 
                 command = Command()
@@ -110,7 +110,7 @@ class Simulate:
                 time.sleep(1)
                 command.state = "throw"
                 command.r1 = 0
-                command.r2 = -30
+                command.r2 = -20
                 command.r3 = -180
                 command.rv2 = target_w
                 command_str = command.encode()
@@ -126,8 +126,8 @@ class Simulate:
                 self.pub2.publish(command_str)
             elif check_distance(robot2_position, ball_position) < 0.5:
                 target_distance = check_distance(robot1_position, robot2_position)
-                target_v = math.sqrt(target_distance * 10 / math.sin(math.radians(45)))
-                target_w = target_v / 0.15
+                target_v = math.sqrt(target_distance*10/2)/math.sin(math.radians(45))
+                target_w = target_v / 0.11
                 time.sleep(1)
 
                 command = Command()
@@ -146,7 +146,7 @@ class Simulate:
                 time.sleep(1)
                 command.state = "throw"
                 command.r1 = 0
-                command.r2 = -30
+                command.r2 = -20
                 command.r3 = -180
                 command.rv2 = target_w
                 command_str = command.encode()
