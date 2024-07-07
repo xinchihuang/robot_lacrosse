@@ -18,6 +18,46 @@ from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 import cv2
 from utils import rotate_matrix_coordinate,calculate_rotation_angle
+def check_distance(position1,position2):
+    return ((position1.x-position2.x)**2+(position1.y-position2.y)**2+(position1.z-position2.z)**2)**0.5
+def get_root(a,b,c):
+
+    if b**2-4*a*c<0:
+        return None,None
+    return (-b+math.sqrt(b**2-4*a*c))/2/a,(-b-math.sqrt(b**2-4*a))/2/a
+def get_landing_position(ball_memory,robot_position,check_window=10):
+    # print(ball_memory)
+    if len(ball_memory) < check_window:
+        return None, None
+    ball_memory = np.array(ball_memory)
+    x = ball_memory[:, 0]
+    y = ball_memory[:, 1]
+    z = ball_memory[:, 2]
+
+    # Fit a second-degree polynomial (parabola) to the y and z coordinates
+    coefficients = np.polyfit(x, z, 2)
+    a, b, c = coefficients  # Extract coefficients
+    coefficients = np.polyfit(y, z, 2)
+    d, e, f = coefficients  # Extract coefficients
+    x1, x2 = get_root(a, b, c-0.3)
+    y1, y2 = get_root(d, e, f-0.3)
+    if x1==None or y1==None or x2==None or y2==None:
+        return None, None
+    x0 = robot_position.x
+    y0 = robot_position.y
+
+    d1 = (x1 - x0) ** 2 + (y1 - y0) ** 2
+    d2 = (x1 - x0) ** 2 + (y2 - y0) ** 2
+    d3 = (x2 - x0) ** 2 + (y1 - y0) ** 2
+    d4 = (x2 - x0) ** 2 + (y2 - y0) ** 2
+    if min(d1, d2, d3, d4) == d1:
+        return x1, y1
+    elif min(d1, d2, d3, d4) == d2:
+        return x1, y2
+    elif min(d1, d2, d3, d4) == d3:
+        return x2, y1
+    elif min(d1, d2, d3, d4) == d4:
+        return x2, y2
 
 class Command:
     def __init__(self,state="idle",vx=0,vy=0,vw=0,r1=0,r2=-90,r3=180,target_x=0,target_y=0,rv1=0,rv2=0,rv3=0):
@@ -79,7 +119,7 @@ class Robot:
         self.g = 10
         self.max_speed = 1.5
         self.camera_rpy=[1.57, -0.785, 0.0]
-        self.arm_pose = [-0.2, 0, 0.17]
+        self.arm_pose = [-0.26, 0, 0.17]
         self.frame_count=0
         self.robot_pose=None
     def reset_callback(self, data):
@@ -92,8 +132,8 @@ class Robot:
             # x = self.initial_state.x
             # y = self.initial_state.y
             if self.robot_name=="robot2":
-                x = 3
-                y = 0
+                x = random.random()*3
+                y = random.random()*3
             else:
                 x = self.initial_state.x
                 y = self.initial_state.y
@@ -149,23 +189,30 @@ class Robot:
         ball_position = data.pose[model_dict['ball']].position
         ball_velocity = data.twist[model_dict['ball']].linear
         # print(ball_position)
-        self.world_pose=robot_position
+        self.frame_count+=1
+        if self.frame_count%50==0:
+            self.ball_memory.append([ball_position.x, ball_position.y, ball_position.z])
+        if ball_position.z<0.5 or check_distance(data.pose[model_dict["robot1"]].position, ball_position) < 0.5 or check_distance(data.pose[model_dict["robot2"]].position, ball_position) < 0.5:
 
+            self.ball_memory=[]
+        self.world_pose=robot_position
         q = Quaternion(robot_pose.orientation.x, robot_pose.orientation.y,
                        robot_pose.orientation.z, robot_pose.orientation.w)
         theta=q.to_euler(degrees=False)[0]
-
         msg = Twist()
 
-
-
         if self.state == "catch" and ball_position.z>self.arm_pose[2]:
-            t = (ball_velocity.z + math.sqrt(
-                ball_velocity.z * ball_velocity.z + (ball_position.z - self.arm_pose[2]) * self.g * 2)) / self.g
-            target_x = ball_position.x + t * ball_velocity.x
-            target_y = ball_position.y + t * ball_velocity.y
-            self.catch_target_pose = [target_x, target_y, 0]
-            print(self.catch_target_pose)
+
+            # t = (ball_velocity.z + math.sqrt(
+            #     ball_velocity.z * ball_velocity.z + (ball_position.z - self.arm_pose[2]) * self.g * 2)) / self.g
+            # target_x = ball_position.x + t * ball_velocity.x
+            # target_y = ball_position.y + t * ball_velocity.y
+            # self.catch_target_pose = [target_x, target_y, 0]
+            target_x, target_y=get_landing_position(self.ball_memory,robot_position)
+            if not target_x==None and not target_y==None:
+                self.catch_target_pose = [target_x, target_y, 0]
+            if self.frame_count%50==0:
+                print(self.robot_name,self.catch_target_pose,[ball_position.x,ball_position.y,ball_position.z],len(self.ball_memory))
 
             # theta=0
             bias_x = math.cos(-theta) * self.arm_pose[0]
@@ -185,6 +232,8 @@ class Robot:
 
             msg.linear.x=x_relative
             msg.linear.y=y_relative
+            # msg.linear.x=0
+            # msg.linear.y=0
             msg.linear.z = 0
             msg.angular.z = 0
         elif self.state == "rotate":
@@ -211,8 +260,6 @@ class Ball:
     def reset_callback(self,data):
         command = Command()
         command.decode(data.data)
-        # rospy.loginfo("message from topic%s: %s", "ball", data.data)
-        # print(command.state)
         if command.state == "reset":
             state_msg = ModelState()
             state_msg.model_name = 'ball'
