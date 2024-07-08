@@ -1,113 +1,197 @@
 import numpy as np
+from numpy.polynomial.polynomial import Polynomial
+import sympy as sp
 import matplotlib.pyplot as plt
-import math
-from utils import rotate_matrix_coordinate,calculate_rotation_angle,detect_ball,check_distance
-ball_memory=np.load("robot1.npy")
-class Robot:
-    def __init__(self, robot_name,initial_state,state="idle"):
-        self.robot_name=robot_name
-        # General Settings
-        self.g = 10
-        self.max_speed = 1.5
-        self.camera_bias=[0.1,0,0.15]
-        self.camera_rpy = [0, -0.785, 0.0]
-        self.arm_pose = [-0.2, 0, 0.3]
-        self.min_frame_count=0
+import plotly.graph_objects as go
+# with open("book2.csv") as file:
+#     line_count=0
+#     ball_memory=[]
+#     while True:
+#         line=file.readline()
+#         if not line:
+#             break
+#         line_count+=1
+#         if line_count<=1:
+#             continue
+#         data_list=line.split(",")
+#         ball_memory.append([float(data_list[4]),float(data_list[5]),float(data_list[6]),float(data_list[0])])
+for name in range(90,91):
+    try:
+        ball_memory=np.load('/home/xinchi/catkin_ws/src/robot_lacrosse/scripts/saved_data/'+str(name)+'.npy')
+        i=20
+        print(len(ball_memory))
 
-        self.save=False
+        x = ball_memory[:, 0]
+        y = ball_memory[:, 1]
+        z = ball_memory[:, 2]
 
-        # Camera relatetd
-        self.fx = 500.39832201574455
-        self.fy = 500.39832201574455
-        self.cx = 500.5
-        self.cy = 500.5
+        # Fit a second-degree polynomial (parabola) to the y and z coordinates
+        coefficients = np.polyfit(x, y, 1)
+        a, b = coefficients  # Extract coefficients
+
+        # Generate y values for the fit
+        x_fit = np.linspace(min(x), max(x), 400)
+        y_fit = a * x_fit + b  # Calculate fitted z values using the polynomial
+
+        # Create a scatter plot for the data points
+        trace_data = go.Scatter(x=x, y=y, mode='markers', name='Data Points', marker=dict(color='red'))
+
+        # Create a line plot for the fitted parabola
+        trace_fit = go.Scatter(x=x_fit, y=y_fit, mode='lines', name='Fitted Parabola', marker=dict(color='blue'))
+
+        # Define the layout of the plot
+        layout = go.Layout(
+            title="Trajectory of the Ball",
+            xaxis=dict(
+                title='x',
+                constrain='domain'  # Keeps x-axis within the domain of the data
+            ),
+            yaxis=dict(
+                title='y',
+                # scaleanchor="y",  # Ensures y-axis is scaled to x-axis
+                # scaleratio=1  # Keeps 1:1 aspect ratio
+            ),
+            showlegend=True,
+            autosize=False,
+            width=1000,
+            height=1000
+        )
+
+        # Create the figure with data and layout
+        fig = go.Figure(data=[trace_data, trace_fit], layout=layout)
+
+        # Show the plot
+        fig.show()
+
+        x = ball_memory[:, 0]
+        y = ball_memory[:, 1]
+        z = ball_memory[:, 2]
+
+        # Fit a second-degree polynomial (parabola) to the y and z coordinates
+        coefficients = np.polyfit(x, z, 2)
+        a, b, c = coefficients  # Extract coefficients
+
+        # Generate y values for the fit
+        x_fit = np.linspace(min(x), max(x), 400)
+        z_fit = a * x_fit ** 2 + b * x_fit + c  # Calculate fitted z values using the polynomial
+
+        # Create a scatter plot for the data points
+        trace_data = go.Scatter(x=x, y=z, mode='markers', name='Data Points', marker=dict(color='red'))
+
+        # Create a line plot for the fitted parabola
+        trace_fit = go.Scatter(x=x_fit, y=z_fit, mode='lines', name='Fitted Parabola', marker=dict(color='blue'))
+
+        # Define the layout of the plot
+        layout = go.Layout(
+            title="Trajectory of the Ball",
+            xaxis=dict(
+                title='x',
+                constrain='domain'
+            ),
+            yaxis=dict(
+                title='z',
+                # scaleanchor="y",  # Anchors z-axis scale to x-axis
+                # scaleratio=1
+            ),
+            showlegend=True,
+            autosize=False,
+            width=1000,
+            height=1000
+        )
+
+        # Create the figure with data and layout
+        fig = go.Figure(data=[trace_data, trace_fit], layout=layout)
+
+        # Show the plot
+        fig.show()
 
 
-        #### Memorys
-        self.ball_memory=[]
-        self.frame_count=0
-        #x,y,theta,t
-        self.robot_pose=[0,0,0,0]
-        self.robot_pose_initial = [0, 0, 0, 0]
-        self.robot_pose_global = [0, 0, 0, 0]
-        # vx,vy,omega
-        self.move_msg = [0, 0, 0]
 
-    def simulate_local_controller(self):
+        x = ball_memory[:, 0]
+        y = ball_memory[:, 1]
+        z = ball_memory[:, 2]
 
-        self.ball_memory=np.load("robot1.npy")
-        self.ball_memory=np.array([self.ball_memory[599],self.ball_memory[600],self.ball_memory[601]])
-        plt.scatter(self.ball_memory[:,0],self.ball_memory[:,1])
-        plt.axis('equal')
-        plt.show()
+        # Fit a second-degree polynomial (parabola) to the y and z coordinates
+        coefficients = np.polyfit(y, z, 2)
+        a, b, c = coefficients  # Extract coefficients
 
-        if len(self.ball_memory) > self.min_frame_count:
-            # if len(self.ball_memory) >self.min_frame_count:
-            #     self.ball_memory.pop(0)
-            # print(len(self.ball_memory))
-            t_start = self.ball_memory[0][2]
-            g_x = 0
-            g_y = self.g * math.cos(math.pi / 4)
-            g_z = -self.g * math.sin(math.pi / 4)
-            A = []
-            B = []
-            camera_angle = -self.camera_rpy[1]
-            for i in range(len(self.ball_memory)):
-                t = self.ball_memory[i][2] - t_start
-                print(t)
-                # alpha=(self.ball_memory[i][0]+self.robot_pose[1])/(1+self.robot_pose[0]*math.cos(camera_angle))
-                # beta=(self.ball_memory[i][1]+self.robot_pose[0]*math.sin(camera_angle))/(1+self.robot_pose[0]*math.cos(camera_angle))
-                alpha = self.ball_memory[i][0]
-                beta = self.ball_memory[i][1]
-                A.append([1, t, 0, 0, -alpha, -alpha * t])
-                A.append([0, 0, 1, t, -beta, -beta * t])
-                # B.append([0.5 * t * t * (g_z * alpha - g_x)])
-                # B.append([0.5 * t * t * (g_z * beta - g_y)])
-                B.append([0.5 * t * t * (g_z * alpha - g_x) + (
-                            -self.robot_pose[0] * math.cos(math.pi / 4) * alpha + self.robot_pose[1])])
-                B.append([0.5 * t * t * (g_z * beta - g_y) + (
-                            -self.robot_pose[0] * math.cos(math.pi / 4) * beta) - (
-                                      -self.robot_pose[0] * math.sin(math.pi / 4))])
+        # Generate y values for the fit
+        y_fit = np.linspace(min(y), max(y), 400)
+        z_fit = a * y_fit ** 2 + b * y_fit + c  # Calculate fitted z values using the polynomial
 
-            A_array = np.array(A)
-            B_array = np.array(B)
-            pseudo_inverse_A = np.linalg.pinv(A_array)
-            solved_parameters = pseudo_inverse_A @ B_array
+        # Create a scatter plot for the data points
+        trace_data = go.Scatter(x=y, y=z, mode='markers', name='Data Points', marker=dict(color='red'))
 
-            x0_c, vx_c, y0_c, vy_c, z0_c, vz_c = solved_parameters[0][0], solved_parameters[1][0], \
-            solved_parameters[2][0], solved_parameters[3][0], solved_parameters[4][0], solved_parameters[5][0]
+        # Create a line plot for the fitted parabola
+        trace_fit = go.Scatter(x=y_fit, y=z_fit, mode='lines', name='Fitted Parabola', marker=dict(color='blue'))
 
-            rotate_matrix = rotate_matrix_coordinate(45, 0, 90)
-            ball_position_c = np.array([x0_c, y0_c, z0_c])
-            ball_velocity_c = np.array([vx_c, vy_c, vz_c])
-            ball_position_w = rotate_matrix @ ball_position_c
-            ball_velocity_w = rotate_matrix @ ball_velocity_c
-            x_ball_w, y_ball_w, z_ball_w = ball_position_w[0], ball_position_w[1], ball_position_w[2]
-            vx_ball_w, vy_ball_w, vz_ball_w = ball_velocity_w[0], ball_velocity_w[1], ball_velocity_w[2]
-            x_ball_w = x_ball_w + self.camera_bias[0]
-            z_ball_w = z_ball_w + self.camera_bias[2]
-            target_x = 0
-            target_y = 0
-            print(x_ball_w, y_ball_w, z_ball_w,vx_ball_w, vy_ball_w, vz_ball_w)
-            if vz_ball_w ** 2 - (z_ball_w - self.arm_pose[2]) * (-self.g) * 2 > 0:
-                drop_t = (-vz_ball_w - math.sqrt(
-                    vz_ball_w ** 2 - (z_ball_w - self.arm_pose[2]) * (-self.g) * 2)) / (-self.g)
-                target_x = x_ball_w + drop_t * vx_ball_w - self.arm_pose[0]
-                target_y = y_ball_w + drop_t * vy_ball_w - self.arm_pose[1]
-            distance_x = target_x - self.robot_pose[0]
-            distance_y = target_y - self.robot_pose[1]
-            if distance_x>0:
-                vx = min(abs(distance_x) * 1, 1) * self.max_speed * (distance_x) / abs(distance_x)
-            else:
-                vx=0
-            if distance_y>0:
-                vy = min(abs(distance_y) * 1, 1) * self.max_speed * (distance_y) / abs(distance_y)
-            else:
-                vy=0
-            self.move_msg = [vx, vy, 0]
-            print(distance_x, distance_y)
-class_test=Robot("robot1",1)
-class_test.simulate_local_controller()
-# 0.09999984810234007 2.631759024147877e-07 0.14990338548878626 -3.756707601458217e-05 -4.4092717806960624e-05 0.036557950263426266
-# 0.09994383329997437 -0.000125894576867611 0.18696210895765775 0.10614614206823407 -0.0015307385601591064 0.7187713445868923
-# 0.09974935748055175 -0.0015097206775669086 0.8759787238940369 1.604749942057559 -0.00794352271122109 4.284814290530555
+        # Define the layout of the plot
+        layout = go.Layout(
+            title="Trajectory of the Ball",
+            xaxis=dict(
+                title='y',
+                constrain='domain'
+            ),
+            yaxis=dict(
+                title='z',
+                # scaleanchor="y",  # Anchors z-axis scale to y-axis
+                # scaleratio=1
+            ),
+            showlegend=True,
+            autosize=False,
+            width=1000,
+            height=1000
+        )
+
+        # Create the figure with data and layout
+        fig = go.Figure(data=[trace_data, trace_fit], layout=layout)
+
+        # Show the plot
+        fig.show()
+    except:
+        pass
+# print(ball_memory)
+# start_time=ball_memory[0][3]
+# A=[]
+# B=[]
+# ball_memory=np.array(ball_memory)
+# for i in range(8,len(ball_memory)):
+#     x=ball_memory[:i,0]
+#     y=ball_memory[:i,1]
+#     z=ball_memory[:i,2]
+#     coefficients = np.polyfit(x, y, 1)  # 返回值是高阶到低阶的系数列表
+#
+#     # 获取系数
+#     a, b,  = coefficients
+#     # 用拟合的抛物线方程生成 y 值
+#     x_fit = np.linspace(min(x), max(x), 400)
+#     y_fit = a * x_fit + b
+#
+#     # 绘制数据点和拟合的抛物线
+# plt.scatter(x, y, color='red', label='Data Points')
+# plt.plot(x_fit, y_fit, color='blue', label='Fitted Parabola')
+# plt.xlabel('x')
+# plt.ylabel('y')
+# plt.axis('equal')
+# plt.legend()
+# plt.show()
+# for i in range(8,len(ball_memory)):
+#     x=ball_memory[:i,0]
+#     y=ball_memory[:i,1]
+#     z=ball_memory[:i,2]
+#     coefficients = np.polyfit(x, z, 2)  # 返回值是高阶到低阶的系数列表
+#
+#     # 获取系数
+#     a, b, c  = coefficients
+#     # 用拟合的抛物线方程生成 y 值
+#     x_fit = np.linspace(min(x), max(x), 400)
+#     z_fit = a * x_fit ** 2 + b * x_fit + c
+#
+#     # 绘制数据点和拟合的抛物线
+# plt.scatter(x, z, color='red', label='Data Points')
+# plt.plot(x_fit, z_fit, color='blue', label='Fitted Parabola')
+# plt.xlabel('x')
+# plt.ylabel('z')
+# plt.axis('equal')
+# plt.legend()
+# plt.show()
