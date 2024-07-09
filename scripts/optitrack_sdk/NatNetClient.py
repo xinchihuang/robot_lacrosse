@@ -19,8 +19,8 @@ import struct
 from threading import Thread
 import copy
 import time
-from optitrack_control.optitrack_sdk import DataDescriptions
-from optitrack_control.optitrack_sdk import MoCapData
+from optitrack_sdk import DataDescriptions
+from optitrack_sdk import MoCapData
 import queue
 # from object_tracker import detect_objects
 # from centralized_controller import centralized_control

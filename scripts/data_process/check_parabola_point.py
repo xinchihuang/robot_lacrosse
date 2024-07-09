@@ -9,9 +9,7 @@ def check_parabola_point(ball_memory,check_window=20,tolorent_points=3):
     outliers_count=0
     previous_slope=float("inf")
     for point in ball_memory[-check_window:-1,:]:
-        # print(point)
         slope=(check_point[2]-point[2])/(math.sqrt((check_point[0]-point[0])**2+(check_point[1]-point[1])**2))
-        # print(slope)
         if slope < previous_slope:
             previous_slope=slope
         else:
