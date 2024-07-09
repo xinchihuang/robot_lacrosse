@@ -4,7 +4,7 @@ import time
 import numpy as np
 from squaternion import Quaternion
 from scripts.optitrack_sdk.NatNetClient import NatNetClient
-from scripts.robomaster.robomaster_executor import RoboMasterExecutor
+from scripts.robomaster_executor.robomaster_executor import RoboMasterExecutor
 from scripts.data_process.check_parabola_point import check_parabola_point
 import os
 from scripts.manual_control.throw import throw_a_ball

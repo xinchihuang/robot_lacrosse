@@ -34,8 +34,54 @@ def global_control_to_local_control(self_rotation,controls):
     vy_local=-controls[0]*math.sin(self_rotation)+controls[1]*math.cos(self_rotation)
     omega_local=controls[2]
     return vx_local, vy_local, omega_local
-def central_controller(self_position,self_rotation,target_position,target_rotation=0,max_speed=3.5,decrease_range=0.5):
+def distance_controller_local(self_position,target,control_gain=1,max_speed=1.5):
+    """
+    A simple distance based controller
+    Args:
+        self_position: robot position in robots coordinate frame [x,y,(z),(t)]
+        target: target position in robots coordinate frame [x,y,(z),(t)]
+        control_gain: A parameter for controlling how fast the velocity change according to relative distance
+        max_speed: The maximum speed of robot
 
+    Returns:
+        velocities: [vx,vy,...]
+    """
+    distance_x = target[0] - self_position[0]
+    distance_y = target[1] - self_position[1]
+    vx = min(abs(distance_x) * control_gain, 1) * max_speed * (distance_x) / abs(distance_x)
+    vy = min(abs(distance_y) * control_gain, 1) * max_speed * (distance_y) / abs(distance_y)
+    return [vx,vy]
+def distance_time_controller_local(self_position,target,t,max_speed=1.5):
+    """
+    A simple distance based controller with time
+    Args:
+        self_position: robot position in robots coordinate frame [x,y,(z),(t)]
+        target: target position in robots coordinate frame [x,y,(z),(t)]
+        t: The time to reach the target
+        max_speed: The maximum speed of robot
+
+    Returns:
+        velocities: [vx,vy,...]
+    """
+    distance_x = target[0] - self_position[0]
+    distance_y = target[1] - self_position[1]
+    vx = (distance_x/t)/abs(distance_x/t)*max(abs(distance_x/t),max_speed)
+    vy = (distance_y/t)/abs(distance_y/t)*max(abs(distance_y/t),max_speed)
+    return [vx,vy]
+def central_controller(self_position,self_rotation,target_position,target_rotation=0,max_speed=3.5,decrease_range=0.5):
+    """
+    Central controller function for chassis, try to maximize the speed before reach the decrease range
+    Args:
+        self_position: robot present position in world coordinates
+        self_rotation:  robot present rotation in world coordinates
+        target_position: target position in world coordinates
+        target_rotation: target rotation in world coordinates
+        max_speed: the maximum speed of the chassis
+        decrease_range: decrease range of the chassis
+
+    Returns:
+
+    """
     dx=target_position[0] - self_position[0]
     dy=target_position[1] - self_position[1]
     # print("max_speed", math.sqrt(dx ** 2 + dy ** 2))
@@ -98,6 +144,17 @@ def root(a,b,c):
         return None,None
     return (-b + math.sqrt(b**2 - 4*a*c))/2/a,(-b - math.sqrt(b**2 - 4*a*c))/2/a
 def landing_point_predictor(ball_memory,arm_hieght=0.3):
+    """
+    Calculates the landing point of the ball
+    (need to add time predictor later)
+    Args:
+        ball_memory: the observed ball memory
+        arm_hieght: the net's height
+
+    Returns:
+
+    """
+
     ball_memory=np.array(ball_memory)
     x = ball_memory[:, 0]
     y = ball_memory[:, 1]
