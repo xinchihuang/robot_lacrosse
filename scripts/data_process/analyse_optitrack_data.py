@@ -21,8 +21,8 @@ def root(a,b,c):
     return (-b + math.sqrt(b**2 - 4*a*c))/2/a,(-b - math.sqrt(b**2 - 4*a*c))/2/a
 for name in range(107,108):
     try:
-        name=107
-        ball_memory=np.load('saved_data/'+str(name)+'.npy')
+        name=99
+        ball_memory=np.load('../saved_data/'+str(name)+'.npy')
         i=30
         print(len(ball_memory))
 

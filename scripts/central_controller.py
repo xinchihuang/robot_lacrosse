@@ -5,11 +5,13 @@ import time
 import numpy as np
 from robomaster import robot
 from squaternion import Quaternion
-from optitrack_sdk.NatNetClient import NatNetClient
-from optitrack_sdk import DataDescriptions
-from optitrack_sdk import MoCapData
-from robomaster_executor import RoboMasterExecutor
+from scripts.optitrack_control.optitrack_sdk.NatNetClient import NatNetClient
+from scripts.optitrack_control.optitrack_sdk import DataDescriptions
+from scripts.optitrack_control.optitrack_sdk import MoCapData
+from scripts.optitrack_control.robomaster_executor import RoboMasterExecutor
+from scripts.data_process.check_parabola_point import check_parabola_point
 import os
+from scripts.manual_control.throw import throw_a_ball
 
 # This is a callback function that gets connected to the NatNet client
 # and called once per mocap frame.
@@ -96,7 +98,7 @@ def landing_point_predictor(ball_memory,arm_hieght=0.3):
     x1,x2=root(c,d,e-arm_hieght)
     y1,y2=root(f,g,h-arm_hieght)
     if x1==None or x2==None or y1==None or y2==None:
-        print("Error", len(ball_memory))
+        # print("Error", len(ball_memory))
         return ball_memory[-1][0],ball_memory[-1][1],1
     x0=ball_memory[0][0]
     y0=ball_memory[0][1]
@@ -130,7 +132,7 @@ class Robot:
         # General Settings
         self.g = 10
         self.max_speed = 3
-        self.arm_pose = [-0.2, 0, 0.3]
+        self.arm_pose = [-0.25, 0, 0.3]
         # landing prediction
         self.ball_memory=[]
         self.save_data=[]
@@ -145,7 +147,8 @@ class Robot:
             landing_target_x = None
             landing_target_y = None
             if len(self.ball_memory) >= 20:
-                landing_target_x, landing_target_y, drop_t = landing_point_predictor(self.ball_memory, self.arm_pose[2])
+                if check_parabola_point(self.ball_memory)==True:
+                    landing_target_x, landing_target_y, drop_t = landing_point_predictor(self.ball_memory, self.arm_pose[2])
                 # landing_target_x, landing_target_y, drop_t=0,0,1
                 # landing_time = drop_t - (self.ball_memory[-1][3] - self.ball_memory[0][3])
             if x_world**2+y_world**2<2.25 and not landing_target_x==None and not landing_target_y==None:
@@ -180,6 +183,10 @@ class Robot:
             if z_world>0.33 and x_world ** 2 + y_world ** 2 < 2.25:
                 present_time = time.time()
                 self.ball_memory.append([x_world, y_world, z_world, present_time])
+                is_parabola=check_parabola_point(self.ball_memory)
+                print(is_parabola,len(self.ball_memory))
+                if not is_parabola and len(self.ball_memory)>20:
+                    self.ball_memory=[]
                 # print(z_world,len(self.ball_memory))
 
                 self.save_data.append([x_world, y_world, z_world])
@@ -253,5 +260,8 @@ if __name__ == "__main__":
     # Start up the streaming client now that the callbacks are set up.
     # This will run perpetually, and operate on a separate thread.
     is_running = streaming_client.run()
+
+    throw_a_ball()
+
 
 
