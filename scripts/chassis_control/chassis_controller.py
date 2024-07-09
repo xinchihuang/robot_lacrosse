@@ -22,10 +22,10 @@ def optitrack_coordinate_to_world_coordinates(position, rotation):
     return x_world, y_world, z_world,-theta_world
 def global_control_to_local_control(self_rotation,controls):
     """
-
+    Transfer the global control to robot's local control
     Args:
-        self_rotation:
-        controls:
+        self_rotation: robots rotation relative to z axis (in radius)
+        controls: global control
 
     Returns:
 
@@ -83,6 +83,17 @@ def landing_point_predictor_old(ball_memory,arm_hieght=0.3):
 
     return landing_target_x, landing_target_y,drop_t
 def root(a,b,c):
+    """
+    Calculates the roots of the parabola equation
+    If no real roots are found return None
+    Args:
+        a:
+        b:
+        c:
+
+    Returns: roots
+
+    """
     if b**2 - 4*a*c<0:
         return None,None
     return (-b + math.sqrt(b**2 - 4*a*c))/2/a,(-b - math.sqrt(b**2 - 4*a*c))/2/a
