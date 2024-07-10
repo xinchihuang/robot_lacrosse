@@ -1,9 +1,8 @@
 import pygame
 from robomaster import robot
-import math
 import time
 import can
-from pcan_cybergear import CANMotorController
+from scripts.arm_control.pcan_cybergear import CANMotorController
 
 # 初始化Pygame
 pygame.init()

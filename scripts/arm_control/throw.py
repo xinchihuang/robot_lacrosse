@@ -1,13 +1,7 @@
 import time
 import math
 import can
-from scripts.manual_control.pcan_cybergear import CANMotorController
-
-bus = can.interface.Bus(interface="pcan", channel="PCAN_USBBUS1", bitrate=1000000)
-motor1 = CANMotorController(bus, motor_id=101, main_can_id=254)
-motor2 = CANMotorController(bus, motor_id=102, main_can_id=254)
-motor3 = CANMotorController(bus, motor_id=103, main_can_id=254)
-
+from scripts.arm_control.pcan_cybergear import CANMotorController
 
 def throw_ball(brake_angle=math.pi/6, torque=-9):
     brake_angle = brake_angle
@@ -52,13 +46,18 @@ def move_upper_arm(target=-math.pi/6):
         motor1.send_motor_control_command(torque=0, target_angle=start_angle + i * step_length, target_velocity=0, Kp=100, Kd=1)
         time.sleep(0.001)
     print("end_angle", target)
-def throw_a_ball():
+def throw_a_ball(motor1, motor2):
     # move_lower_arm(target=math.pi/4)
     # move_lower_arm(target=math.pi/2)
     # move_upper_arm(target=-math.pi/12)
-    # move_upper_arm(target=-math.pi/8)
+    move_upper_arm(target=0)
     # move_upper_arm(target=0)
     # time.sleep(0.5)
-    throw_ball(brake_angle=math.pi/3, torque=-12)
+    throw_ball(brake_angle=math.pi/3)
     # move_upper_arm(target=0)
     move_lower_arm(target=math.pi/2)
+if __name__ == "__main__":
+    bus = can.interface.Bus(interface="pcan", channel="PCAN_USBBUS1", bitrate=1000000)
+    motor1 = CANMotorController(bus, motor_id=101, main_can_id=254)
+    motor2 = CANMotorController(bus, motor_id=102, main_can_id=254)
+    motor3 = CANMotorController(bus, motor_id=103, main_can_id=254)

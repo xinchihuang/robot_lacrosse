@@ -3,7 +3,7 @@ import time
 import can
 from pcan_cybergear import CANMotorController
 
-bus = can.interface.Bus(bustype="socketcan", channel="can0", bitrate=1000000)
+bus = can.interface.Bus(interface="pcan", channel="PCAN_USBBUS1", bitrate=1000000)
 motor1 = CANMotorController(bus, motor_id=101, main_can_id=254)
 motor2 = CANMotorController(bus, motor_id=102, main_can_id=254)
 motor3 = CANMotorController(bus, motor_id=103, main_can_id=254)
@@ -46,14 +46,14 @@ print(motor3.send_motor_control_command(torque=0, target_angle=0, target_velocit
     #time.sleep(1)
 
 
-time.sleep(2)
-
-throw_ball()
-
-time.sleep(2)
-
-print(motor1.disable())
-print(motor2.disable())
-print(motor3.disable())
+# time.sleep(2)
+#
+# throw_ball()
+#
+# time.sleep(2)
+#
+# print(motor1.disable())
+# print(motor2.disable())
+# print(motor3.disable())
 
 

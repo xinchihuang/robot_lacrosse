@@ -12,7 +12,7 @@ def load_data():
     dataset=[]
     labelset=[]
     for i in range(100):
-        path = "/home/xinchi/catkin_ws/src/robot_lacrosse/scripts/saved_data/" + str(i) + ".npy"
+        path = "/home/xinchi/catkin_ws/src/robot_lacrosse/scripts/saved_ball_data/" + str(i) + ".npy"
         if os.path.isfile(path):
             data=np.load(path)
             dataset.append(data[:30,:])

@@ -1,6 +1,6 @@
 import numpy as np
 import math
-def check_parabola_point(ball_memory,check_window=20,tolorent_points=3):
+def check_parabola_point(ball_memory,check_window=20,tolorent_points=20):
 
     ball_memory = np.array(ball_memory)
     check_point=ball_memory[-1]
@@ -17,7 +17,7 @@ def check_parabola_point(ball_memory,check_window=20,tolorent_points=3):
         if outliers_count>tolorent_points:
             return False
     return True
-# ball_memory=np.load("../saved_data/99.npy")
+# ball_memory=np.load("../saved_ball_data/99.npy")
 #
 # for i in range(1,50):
 #     print(check_parabola_point(ball_memory[:i,:]))

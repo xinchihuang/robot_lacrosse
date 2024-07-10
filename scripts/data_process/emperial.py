@@ -5,10 +5,18 @@ import os
 from plotly.offline import plot
 import plotly.graph_objects as go
 import math
-name = 99
-ball_memory = np.load('../saved_data/' + str(name) + '.npy')
-i = 90
+
+files_and_dirs = os.listdir(
+    "../saved_ball_data/")
+# Filter out directories, keeping only files
+files = [f for f in files_and_dirs if os.path.isfile(
+    os.path.join("../saved_ball_data/", f))]
+number = len(files)
+# number=84
+ball_memory = np.load('../saved_ball_data/' + str(number-1) + '.npy')
+i = 30
 print(len(ball_memory))
+print(ball_memory)
 
 x = ball_memory[:, 0]
 y = ball_memory[:, 1]
@@ -30,7 +38,7 @@ trace_fit = go.Scatter(x=x_fit, y=y_fit, mode='lines', name='Fitted Parabola', m
 
 # Define the layout of the plot
 layout = go.Layout(
-    title="Trajectory of the Ball",
+    title="Trajectory of the Ball "+str(number-1),
     xaxis=dict(
         title='x',
         constrain='domain'  # Keeps x-axis within the domain of the data
@@ -72,7 +80,7 @@ trace_fit = go.Scatter(x=x_fit, y=z_fit, mode='lines', name='Fitted Parabola', m
 
 # Define the layout of the plot
 layout = go.Layout(
-    title="Trajectory of the Ball",
+    title="Trajectory of the Ball"+str(number-1),
     xaxis=dict(
         title='x',
         constrain='domain'
@@ -114,7 +122,7 @@ trace_fit = go.Scatter(x=y_fit, y=z_fit, mode='lines', name='Fitted Parabola', m
 
 # Define the layout of the plot
 layout = go.Layout(
-    title="Trajectory of the Ball",
+    title="Trajectory of the Ball"+str(number-1),
     xaxis=dict(
         title='y',
         constrain='domain'

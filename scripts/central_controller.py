@@ -7,7 +7,7 @@ from scripts.optitrack_sdk.NatNetClient import NatNetClient
 from scripts.robomaster_executor.robomaster_executor import RoboMasterExecutor
 from scripts.data_process.check_parabola_point import check_parabola_point
 import os
-from scripts.manual_control.throw import throw_a_ball
+from scripts.arm_control.throw import throw_a_ball
 
 # This is a callback function that gets connected to the NatNet client
 # and called once per mocap frame.
@@ -198,7 +198,7 @@ class Robot:
                     # Filter out directories, keeping only files
                     files = [f for f in files_and_dirs if os.path.isfile(os.path.join("C:\\Users\\xinchi\\PycharmProjects\\optiitrack_global_control\\saved_data", f))]
                     number=len(files)
-                    np.save("C:\\Users\\xinchi\\PycharmProjects\\optiitrack_global_control\\saved_data\\"+str(number)+".npy", np.array(self.save_data))
+                    np.save("C:\\Users\\xinchi\\PycharmProjects\\optiitrack_global_control\\saved_ball_data\\"+str(number)+".npy", np.array(self.save_data))
 
                     self.saved=True
                 self.ball_memory = []

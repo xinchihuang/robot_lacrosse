@@ -1,9 +1,7 @@
-import math
 import sys
 from scripts.optitrack_sdk.NatNetClient import NatNetClient
-from scripts.robomaster_executor import RoboMasterExecutor
-from scripts.data_process.check_parabola_point import check_parabola_point
-from scripts.manual_control.throw import throw_a_ball
+from scripts.robomaster_executor.robomaster_executor import RoboMasterExecutor
+from scripts.arm_control.throw import throw_a_ball
 from Robot import Robot
 
 def my_parse_args(arg_list, args_dict):

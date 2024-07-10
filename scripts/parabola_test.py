@@ -24,7 +24,7 @@ class Ball:
         ball_position = data.pose[model_dict['ball']].position
         if self.frame_count % 10 == 0:
             self.ball_memory.append([ball_position.x, ball_position.y, ball_position.z])
-            print(len(self.ball_memory))
+            # print(len(self.ball_memory))
         # print(ball_position.z)
         if ball_position.z < 0.3:
 

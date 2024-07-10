@@ -3,12 +3,11 @@ import sys
 import time
 import numpy as np
 import os
-from squaternion import Quaternion
 from scripts.optitrack_sdk.NatNetClient import NatNetClient
-from scripts.robomaster_executor import RoboMasterExecutor
+from scripts.robomaster_executor.robomaster_executor import RoboMasterExecutor
 from scripts.data_process.check_parabola_point import check_parabola_point
-from scripts.manual_control.throw import throw_a_ball
-from scripts.chassis_control.chassis_controller import optitrack_coordinate_to_world_coordinates,global_control_to_local_control,central_controller,landing_point_predictor
+from scripts.arm_control.throw import throw_a_ball
+from scripts.chassis_control.chassis_controller import optitrack_coordinate_to_world_coordinates, central_controller,landing_point_predictor
 
 class Robot:
     def __init__(self, robot_name,executor=None):
@@ -25,6 +24,7 @@ class Robot:
         self.saved=False
         self.state=None
         self.parabola_state=False
+        self.robot_arm_list=[1,1,1]
 
     def process_optitrack_rigid_body_data(self, new_id, position, rotation):
         """
@@ -84,32 +84,22 @@ class Robot:
         # print(position)
         if not position==None:
             x_world, y_world, z_world, theta_world = optitrack_coordinate_to_world_coordinates(position, rotation)
-            if z_world>0.33 and x_world ** 2 + y_world ** 2 < 2.25:
+            if z_world>0.35 and x_world ** 2 + y_world ** 2 < 4:
                 present_time = time.time()
                 self.ball_memory.append([x_world, y_world, z_world, present_time])
                 is_parabola=check_parabola_point(self.ball_memory)
-                print(is_parabola,len(self.ball_memory))
+                # print(is_parabola,len(self.ball_memory))
                 if not is_parabola and len(self.ball_memory)>20:
                     self.ball_memory=[]
-                # print(z_world,len(self.ball_memory))
-
-                self.save_data.append([x_world, y_world, z_world])
-                # if z_world < 0.35:
-                #     print("landing")
-                #     print(self.save_data[-1], len(self.ball_memory))
+                print(z_world,len(self.ball_memory))
+                if self.saved == False:
+                    self.save_data.append([x_world, y_world, z_world])
 
 
             else:
                 if len(self.save_data)>50 and self.saved==False:
-                    files_and_dirs = os.listdir("C:\\Users\\xinchi\\PycharmProjects\\optiitrack_global_control\\saved_data")
-                    # Filter out directories, keeping only files
-                    files = [f for f in files_and_dirs if os.path.isfile(os.path.join("C:\\Users\\xinchi\\PycharmProjects\\optiitrack_global_control\\saved_data", f))]
-                    number=len(files)
-                    np.save("C:\\Users\\xinchi\\PycharmProjects\\optiitrack_global_control\\saved_data\\"+str(number)+".npy", np.array(self.save_data))
-
                     self.saved=True
                 self.ball_memory = []
-                self.save_data=[]
 
             # self.executor.stop_robot()
 
