@@ -1,197 +1,29 @@
 import numpy as np
-from numpy.polynomial.polynomial import Polynomial
-import sympy as sp
-import matplotlib.pyplot as plt
-import plotly.graph_objects as go
-# with open("book2.csv") as file:
-#     line_count=0
-#     ball_memory=[]
-#     while True:
-#         line=file.readline()
-#         if not line:
-#             break
-#         line_count+=1
-#         if line_count<=1:
-#             continue
-#         data_list=line.split(",")
-#         ball_memory.append([float(data_list[4]),float(data_list[5]),float(data_list[6]),float(data_list[0])])
-for name in range(90,91):
-    try:
-        ball_memory=np.load('/home/xinchi/catkin_ws/src/robot_lacrosse/scripts/saved_data/'+str(name)+'.npy')
-        i=20
-        print(len(ball_memory))
+from scipy.optimize import fsolve
 
-        x = ball_memory[:, 0]
-        y = ball_memory[:, 1]
-        z = ball_memory[:, 2]
+# Example fitted parameters [a, b, c, d, e, f]
+params = [1, 1, 0, 1, 1, 1]  # These should be replaced with your actual fitted parameters
 
-        # Fit a second-degree polynomial (parabola) to the y and z coordinates
-        coefficients = np.polyfit(x, y, 1)
-        a, b = coefficients  # Extract coefficients
+# The function to find x, y for a given z
+def equations(p, params, z_given):
+    x, y = p
+    a, b, c, d, e, f = params
+    # Return an array of residuals (equations)
+    return [
+        a*x**2 + b*y**2 + c*x*y + d*x + e*y + f - z_given
+    ]
 
-        # Generate y values for the fit
-        x_fit = np.linspace(min(x), max(x), 400)
-        y_fit = a * x_fit + b  # Calculate fitted z values using the polynomial
+# Example z value
+z_given = 15
 
-        # Create a scatter plot for the data points
-        trace_data = go.Scatter(x=x, y=y, mode='markers', name='Data Points', marker=dict(color='red'))
+# Initial guess for x and y
+initial_guess = [0, 0]
 
-        # Create a line plot for the fitted parabola
-        trace_fit = go.Scatter(x=x_fit, y=y_fit, mode='lines', name='Fitted Parabola', marker=dict(color='blue'))
+# Solve for x and y
+solution = fsolve(equations, initial_guess, args=(params, z_given))
 
-        # Define the layout of the plot
-        layout = go.Layout(
-            title="Trajectory of the Ball",
-            xaxis=dict(
-                title='x',
-                constrain='domain'  # Keeps x-axis within the domain of the data
-            ),
-            yaxis=dict(
-                title='y',
-                # scaleanchor="y",  # Ensures y-axis is scaled to x-axis
-                # scaleratio=1  # Keeps 1:1 aspect ratio
-            ),
-            showlegend=True,
-            autosize=False,
-            width=1000,
-            height=1000
-        )
+# Since fsolve might sometimes return a flat array, reshape if necessary
+if solution.ndim > 1:
+    solution = solution.flatten()
 
-        # Create the figure with data and layout
-        fig = go.Figure(data=[trace_data, trace_fit], layout=layout)
-
-        # Show the plot
-        fig.show()
-
-        x = ball_memory[:, 0]
-        y = ball_memory[:, 1]
-        z = ball_memory[:, 2]
-
-        # Fit a second-degree polynomial (parabola) to the y and z coordinates
-        coefficients = np.polyfit(x, z, 2)
-        a, b, c = coefficients  # Extract coefficients
-
-        # Generate y values for the fit
-        x_fit = np.linspace(min(x), max(x), 400)
-        z_fit = a * x_fit ** 2 + b * x_fit + c  # Calculate fitted z values using the polynomial
-
-        # Create a scatter plot for the data points
-        trace_data = go.Scatter(x=x, y=z, mode='markers', name='Data Points', marker=dict(color='red'))
-
-        # Create a line plot for the fitted parabola
-        trace_fit = go.Scatter(x=x_fit, y=z_fit, mode='lines', name='Fitted Parabola', marker=dict(color='blue'))
-
-        # Define the layout of the plot
-        layout = go.Layout(
-            title="Trajectory of the Ball",
-            xaxis=dict(
-                title='x',
-                constrain='domain'
-            ),
-            yaxis=dict(
-                title='z',
-                # scaleanchor="y",  # Anchors z-axis scale to x-axis
-                # scaleratio=1
-            ),
-            showlegend=True,
-            autosize=False,
-            width=1000,
-            height=1000
-        )
-
-        # Create the figure with data and layout
-        fig = go.Figure(data=[trace_data, trace_fit], layout=layout)
-
-        # Show the plot
-        fig.show()
-
-
-
-        x = ball_memory[:, 0]
-        y = ball_memory[:, 1]
-        z = ball_memory[:, 2]
-
-        # Fit a second-degree polynomial (parabola) to the y and z coordinates
-        coefficients = np.polyfit(y, z, 2)
-        a, b, c = coefficients  # Extract coefficients
-
-        # Generate y values for the fit
-        y_fit = np.linspace(min(y), max(y), 400)
-        z_fit = a * y_fit ** 2 + b * y_fit + c  # Calculate fitted z values using the polynomial
-
-        # Create a scatter plot for the data points
-        trace_data = go.Scatter(x=y, y=z, mode='markers', name='Data Points', marker=dict(color='red'))
-
-        # Create a line plot for the fitted parabola
-        trace_fit = go.Scatter(x=y_fit, y=z_fit, mode='lines', name='Fitted Parabola', marker=dict(color='blue'))
-
-        # Define the layout of the plot
-        layout = go.Layout(
-            title="Trajectory of the Ball",
-            xaxis=dict(
-                title='y',
-                constrain='domain'
-            ),
-            yaxis=dict(
-                title='z',
-                # scaleanchor="y",  # Anchors z-axis scale to y-axis
-                # scaleratio=1
-            ),
-            showlegend=True,
-            autosize=False,
-            width=1000,
-            height=1000
-        )
-
-        # Create the figure with data and layout
-        fig = go.Figure(data=[trace_data, trace_fit], layout=layout)
-
-        # Show the plot
-        fig.show()
-    except:
-        pass
-# print(ball_memory)
-# start_time=ball_memory[0][3]
-# A=[]
-# B=[]
-# ball_memory=np.array(ball_memory)
-# for i in range(8,len(ball_memory)):
-#     x=ball_memory[:i,0]
-#     y=ball_memory[:i,1]
-#     z=ball_memory[:i,2]
-#     coefficients = np.polyfit(x, y, 1)  # 返回值是高阶到低阶的系数列表
-#
-#     # 获取系数
-#     a, b,  = coefficients
-#     # 用拟合的抛物线方程生成 y 值
-#     x_fit = np.linspace(min(x), max(x), 400)
-#     y_fit = a * x_fit + b
-#
-#     # 绘制数据点和拟合的抛物线
-# plt.scatter(x, y, color='red', label='Data Points')
-# plt.plot(x_fit, y_fit, color='blue', label='Fitted Parabola')
-# plt.xlabel('x')
-# plt.ylabel('y')
-# plt.axis('equal')
-# plt.legend()
-# plt.show()
-# for i in range(8,len(ball_memory)):
-#     x=ball_memory[:i,0]
-#     y=ball_memory[:i,1]
-#     z=ball_memory[:i,2]
-#     coefficients = np.polyfit(x, z, 2)  # 返回值是高阶到低阶的系数列表
-#
-#     # 获取系数
-#     a, b, c  = coefficients
-#     # 用拟合的抛物线方程生成 y 值
-#     x_fit = np.linspace(min(x), max(x), 400)
-#     z_fit = a * x_fit ** 2 + b * x_fit + c
-#
-#     # 绘制数据点和拟合的抛物线
-# plt.scatter(x, z, color='red', label='Data Points')
-# plt.plot(x_fit, z_fit, color='blue', label='Fitted Parabola')
-# plt.xlabel('x')
-# plt.ylabel('z')
-# plt.axis('equal')
-# plt.legend()
-# plt.show()
+print(f"Solved x, y: ({solution[0]}, {solution[1]})")

@@ -23,7 +23,7 @@ for name in range(107,108):
     try:
         name=99
         ball_memory=np.load('../saved_data/'+str(name)+'.npy')
-        i=30
+        i=50
         print(len(ball_memory))
 
         x = ball_memory[:, 0]
