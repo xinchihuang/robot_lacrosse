@@ -1,7 +1,49 @@
 import math
 import numpy as np
 from squaternion import Quaternion
+from sklearn.linear_model import RANSACRegressor
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.pipeline import make_pipeline
+import plotly.graph_objects as go
+from scripts.utils import *
 # from scipy.optimize import least_squares,fsolve
+def plot_parabola(data, check_points=90):
+    print(len(data))
+    x = data[:, 0]
+    z = data[:, 1]
+    x_p = x[:check_points]
+    z_p = z[:check_points]
+    ransac = make_pipeline(PolynomialFeatures(degree=2), RANSACRegressor())
+    ransac.fit(x_p.reshape(-1, 1), z_p)
+    inlier_mask = ransac.named_steps['ransacregressor'].inlier_mask_
+    outlier_mask = np.logical_not(inlier_mask)
+    line_x = np.linspace(min(x), max(x), 1000).reshape(-1, 1)
+    line_z = ransac.predict(line_x)
+
+    fig = go.Figure()
+
+    # 添加内点
+    fig.add_trace(go.Scatter(x=x.flatten(), y=z,
+                             mode='markers', name='Points', marker=dict(color='blue')))
+
+    # 添加外点
+    # fig.add_trace(go.Scatter(x=x[outlier_mask].flatten(), y=z[outlier_mask],
+    #                          mode='markers', name='Outliers', marker=dict(color='red')))
+
+    # 添加拟合的抛物线
+    fig.add_trace(go.Scatter(x=line_x.flatten(), y=line_z, mode='lines',
+                             name='Fitted Parabola', line=dict(color='green')))
+
+    # 更新图形布局
+    fig.update_layout(title='RANSAC Parabola Fitting and Noise Detection',
+                      xaxis_title='x',
+                      yaxis_title='z',
+                      legend_title='Legend',
+                      width=800,
+                      height=600)
+
+    # 显示图形
+    fig.show()
 
 
 def optitrack_coordinate_to_world_coordinates(position, rotation):
@@ -142,6 +184,7 @@ def root(a,b,c):
 
     """
     if b**2 - 4*a*c<0:
+        print(b**2 - 4*a*c)
         return None,None
     return (-b + math.sqrt(b**2 - 4*a*c))/2/a,(-b - math.sqrt(b**2 - 4*a*c))/2/a
 def landing_point_predictor(ball_memory,arm_hieght=0.3):
@@ -169,10 +212,108 @@ def landing_point_predictor(ball_memory,arm_hieght=0.3):
     coefficients_yz = np.polyfit(y, z, 2)
     f, g, h = coefficients_yz  # Extract coefficients
     # Generate y values for the fit
+
+    # ransac = make_pipeline(PolynomialFeatures(degree=1), RANSACRegressor())
+    # ransac.fit(x.reshape(-1, 1), y)
+    # coefficients = ransac.named_steps['ransacregressor'].estimator_.coef_
+    # intercept = ransac.named_steps['ransacregressor'].estimator_.intercept_
+    # a = coefficients[1]
+    # b = intercept + coefficients[0]
+    #
+    # ransac = make_pipeline(PolynomialFeatures(degree=2), RANSACRegressor())
+    # ransac.fit(x.reshape(-1, 1), z)
+    # coefficients = ransac.named_steps['ransacregressor'].estimator_.coef_
+    # intercept = ransac.named_steps['ransacregressor'].estimator_.intercept_
+    # c = coefficients[2]
+    # d = coefficients[1]
+    # e = intercept + coefficients[0]
+    #
+    # ransac = make_pipeline(PolynomialFeatures(degree=2), RANSACRegressor())
+    # ransac.fit(y.reshape(-1, 1), z)
+    # coefficients = ransac.named_steps['ransacregressor'].estimator_.coef_
+    # intercept = ransac.named_steps['ransacregressor'].estimator_.intercept_
+    # f = coefficients[2]
+    # g = coefficients[1]
+    # h = intercept + coefficients[0]
+
     x1,x2=root(c,d,e-arm_hieght)
     y1,y2=root(f,g,h-arm_hieght)
     if x1==None or x2==None or y1==None or y2==None:
-        # print("Error", len(ball_memory))
+        print("Error", len(ball_memory))
+        print(a,b,c,d,e,f,g,h)
+        return ball_memory[-1][0],ball_memory[-1][1],1
+    x0=ball_memory[0][0]
+    y0=ball_memory[0][1]
+    d1 = (x1 - x0) ** 2 + (y1 - y0) ** 2
+    d2 = (x2 - x0) ** 2 + (y1 - y0) ** 2
+    d3 = (x1 - x0) ** 2 + (y2 - y0) ** 2
+    d4 = (x2 - x0) ** 2 + (y2 - y0) ** 2
+    if max(d1,d2,d3,d4)==d1:
+        landing_x=x1
+        landing_y=y1
+    elif max(d1,d2,d3,d4)==d2:
+        landing_x=x2
+        landing_y=y1
+    elif max(d1,d2,d3,d4)==d3:
+        landing_x=x1
+        landing_y=y2
+    elif max(d1,d2,d3,d4)==d4:
+        landing_x=x2
+        landing_y=y2
+    # print(x1,x2,y1,y2)
+    return landing_x,landing_y,1
+def landing_point_predictor_ransac(ball_memory,arm_hieght=0.3):
+    """
+    Calculates the landing point of the ball
+    (need to add time predictor later)
+    Args:
+        ball_memory: the observed ball memory
+        arm_hieght: the net's height
+
+    Returns:
+
+    """
+
+    ball_memory=np.array(ball_memory)
+    x = ball_memory[:, 0]
+    y = ball_memory[:, 1]
+    z = ball_memory[:, 2]
+
+
+    ransac = make_pipeline(PolynomialFeatures(degree=1), RANSACRegressor())
+    ransac.fit(x.reshape(-1, 1), y)
+    coefficients = ransac.named_steps['ransacregressor'].estimator_.coef_
+    intercept = ransac.named_steps['ransacregressor'].estimator_.intercept_
+    a = coefficients[1]
+    b = intercept + coefficients[0]
+
+    ransac = make_pipeline(PolynomialFeatures(degree=2), RANSACRegressor())
+    ransac.fit(x.reshape(-1, 1), z)
+    coefficients = ransac.named_steps['ransacregressor'].estimator_.coef_
+    intercept = ransac.named_steps['ransacregressor'].estimator_.intercept_
+    c = coefficients[2]
+    d = coefficients[1]
+    e = intercept + coefficients[0]
+
+    ransac = make_pipeline(PolynomialFeatures(degree=2), RANSACRegressor())
+    ransac.fit(y.reshape(-1, 1), z)
+    coefficients = ransac.named_steps['ransacregressor'].estimator_.coef_
+    intercept = ransac.named_steps['ransacregressor'].estimator_.intercept_
+    f = coefficients[2]
+    g = coefficients[1]
+    h = intercept + coefficients[0]
+
+
+
+
+
+
+
+    x1,x2=root(c,d,e-arm_hieght)
+    y1,y2=root(f,g,h-arm_hieght)
+    if x1==None or x2==None or y1==None or y2==None:
+        print("Error", len(ball_memory))
+        print(a,b,c,d,e,f,g,h)
         return ball_memory[-1][0],ball_memory[-1][1],1
     x0=ball_memory[0][0]
     y0=ball_memory[0][1]
@@ -195,6 +336,31 @@ def landing_point_predictor(ball_memory,arm_hieght=0.3):
     # print(x1,x2,y1,y2)
     return landing_x,landing_y,1
 
+
+def landing_point_predictor_ransac2(ball_memory, arm_hieght=0.3):
+
+
+    m, intercept,inlier_mask  = fit_line(ball_memory)
+    new_points = world_to_parabola_coordinate(ball_memory, m, intercept)
+    # plot_parabola(ball_memory)
+    # plot_parabola(new_points)
+    a, b, c = fit_parabola(new_points)
+    x1, x2 = root(a, b, c - arm_hieght)
+
+    if x1 == None or x2 == None:
+        print("Error", len(ball_memory))
+        print(a, b, c, )
+        return ball_memory[-1][0], ball_memory[-1][1], 1
+    x0 = new_points[inlier_mask][0][0]
+    d1 = (x1 - x0) ** 2
+    d2 = (x2 - x0) ** 2
+    if max(d1, d2) == d1:
+        landing_x_parabola = x1
+    else:
+        landing_x_parabola = x2
+    x, y = landing_x_parabola / math.sqrt(1 + m ** 2), landing_x_parabola * m / math.sqrt(
+        1 + m ** 2)
+    return x, y+intercept, 1
 # def landing_point_predictor_3(ball_memory,arm_hieght=0.3):
 #     """
 #     Calculates the landing point of the ball

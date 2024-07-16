@@ -1,6 +1,12 @@
 import numpy as np
 # from cv_bridge import CvBridge, CvBridgeError
+import math
 import cv2
+from squaternion import Quaternion
+from sklearn.linear_model import RANSACRegressor
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.pipeline import make_pipeline
+import plotly.graph_objects as go
 def calculate_rotation_angle(v1, v2):
     dot_product = np.dot(v1, v2)
     norm_v1 = np.linalg.norm(v1)
@@ -62,3 +68,82 @@ def detect_ball(data):
 
 def check_distance(position1,position2):
     return ((position1.x-position2.x)**2+(position1.y-position2.y)**2+(position1.z-position2.z)**2)**0.5
+
+def fit_line(ball_memory):
+    x = ball_memory[:, 0]
+    x_reshape = x.reshape(-1, 1)
+    y = ball_memory[:, 1]
+    ransac = make_pipeline(PolynomialFeatures(degree=1), RANSACRegressor())
+    ransac.fit(x_reshape, y)
+    coefficients = ransac.named_steps['ransacregressor'].estimator_.coef_
+    intercept = ransac.named_steps['ransacregressor'].estimator_.intercept_
+    inlier_mask = ransac.named_steps['ransacregressor'].inlier_mask_
+    a = coefficients[1]
+    b = intercept + coefficients[0]
+    return a, b,inlier_mask
+
+def fit_parabola(ball_memory):
+    x = ball_memory[:, 0]
+    x_reshape = x.reshape(-1, 1)
+    y = ball_memory[:, 1]
+    ransac = make_pipeline(PolynomialFeatures(degree=2), RANSACRegressor())
+    ransac.fit(x_reshape, y)
+    coefficients = ransac.named_steps['ransacregressor'].estimator_.coef_
+    intercept = ransac.named_steps['ransacregressor'].estimator_.intercept_
+    a = coefficients[2]
+    b = coefficients[1]
+    c = intercept + coefficients[0]
+    return a, b, c
+
+def world_to_parabola_coordinate(ball_memory, m, b):
+    new_coordinate = []
+    for point in ball_memory:
+        if (point[1] - b) * m > 0:
+            new_coordinate.append([math.sqrt((point[1] - b) ** 2 + (point[0] ** 2)), point[2]])
+        else:
+            new_coordinate.append([-math.sqrt((point[1] - b) ** 2 + (point[0] ** 2)), point[2]])
+    return np.array(new_coordinate)
+
+def root(a, b, c):
+    """
+    Calculates the roots of the parabola equation
+    If no real roots are found return None
+    Args:
+        a:
+        b:
+        c:
+
+    Returns: roots
+
+    """
+    if b ** 2 - 4 * a * c < 0:
+        print(b ** 2 - 4 * a * c)
+        return None, None
+    return (-b + math.sqrt(b ** 2 - 4 * a * c)) / 2 / a, (-b - math.sqrt(b ** 2 - 4 * a * c)) / 2 / a
+def point_filters(points):
+    filtered_points = []
+    point_index=0
+    check_window = 3
+    thresh = 0.5
+    while point_index<len(points)-1:
+        ### check error type 1: Noise point far too far away
+        if points[point_index][1]<0.47:
+            point_index += 1
+            continue
+        ### check error type 2: Noise point far too far away
+
+        if point_index<1:
+            filtered_points.append(points[point_index])
+        elif abs(points[point_index][0]-points[point_index-1][0])<thresh:
+            filtered_points.append(points[point_index])
+        elif abs(points[point_index][0]-points[point_index-1][0])>thresh:
+            noise=False
+            for i in range(1,check_window+1):
+                if point_index+i>=len(points):
+                    noise = True
+                elif points[point_index+i][0]-points[point_index][0]<0:
+                    noise = True
+            if noise==False:
+                filtered_points.append(points[point_index])
+        point_index+=1
+    return np.array(filtered_points)
