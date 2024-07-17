@@ -9,7 +9,7 @@ from gazebo_msgs.msg import ModelStates,ModelState
 from gazebo_msgs.srv import SetModelState
 from squaternion import Quaternion
 from std_msgs.msg import Float64,String
-from gazebo_test import Command
+from comm_data import Command
 import numpy as np
 
 def recorder(data,save_file="saved_pose.npy"):

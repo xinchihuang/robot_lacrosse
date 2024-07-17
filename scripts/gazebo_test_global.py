@@ -18,6 +18,7 @@ from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 import cv2
 from utils import rotate_matrix_coordinate,calculate_rotation_angle
+from chassis_control.chassis_controller import landing_point_predictor
 def check_distance(position1,position2):
     return ((position1.x-position2.x)**2+(position1.y-position2.y)**2+(position1.z-position2.z)**2)**0.5
 def get_root(a,b,c):
@@ -208,7 +209,8 @@ class Robot:
             # target_x = ball_position.x + t * ball_velocity.x
             # target_y = ball_position.y + t * ball_velocity.y
             # self.catch_target_pose = [target_x, target_y, 0]
-            target_x, target_y=get_landing_position(self.ball_memory,robot_position)
+            # target_x, target_y=get_landing_position(self.ball_memory,robot_position)
+            target_x, target_y,_ = landing_point_predictor(self.ball_memory)
             if not target_x==None and not target_y==None:
                 self.catch_target_pose = [target_x, target_y, 0]
             if self.frame_count%50==0:

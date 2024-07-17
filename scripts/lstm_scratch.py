@@ -7,17 +7,44 @@ import numpy as np
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 from torch.utils.data import Dataset, DataLoader
 import torch.optim as optim
-
+from scripts.utils import *
+from scripts.chassis_control.chassis_controller import *
 def load_data():
     dataset=[]
     labelset=[]
     for i in range(100):
-        path = "/home/xinchi/catkin_ws/src/robot_lacrosse/scripts/saved_data/" + str(i) + ".npy"
+        path = "/home/xinchi/catkin_ws/src/robot_lacrosse/scripts/saved_ball_data/" + str(i) + ".npy"
         if os.path.isfile(path):
             data=np.load(path)
-            dataset.append(data[:30,:])
-            labelset.append(data[-1,:2])
-    print(labelset)
+            ball_memory=data
+            selected_ball_memory=data[:30,:]
+            m, intercept, inlier_mask = fit_line(selected_ball_memory)
+            new_points_to_fit = world_to_parabola_coordinate(selected_ball_memory, m, intercept)
+            new_points_to_fit = point_filters(new_points_to_fit)
+            new_points = world_to_parabola_coordinate(ball_memory, m, intercept)
+            new_points = point_filters(new_points)
+            # plot_parabola(ball_memory)
+            # plot_parabola(new_points)
+            a, b, c = fit_parabola(new_points_to_fit)
+            x1, x2 = root(a, b, c - 0.3)
+
+            if x1 == None or x2 == None:
+               continue
+
+            x0 = new_points[0][0]
+            d1 = (x1 - x0) ** 2
+            d2 = (x2 - x0) ** 2
+            if max(d1, d2) == d1:
+                landing_x_parabola = x1
+            else:
+                landing_x_parabola = x2
+            x, y = landing_x_parabola / math.sqrt(1 + m ** 2), landing_x_parabola * m / math.sqrt(
+                1 + m ** 2)
+
+            dataset.append(new_points_to_fit)
+            residual=[landing_x_parabola-new_points[-1][0]]
+            labelset.append(residual)
+    # print(labelset)
     return dataset,labelset
 
 class SequenceDataset(Dataset):
@@ -32,6 +59,11 @@ class SequenceDataset(Dataset):
     def __getitem__(self, idx):
         sequence = self.data[idx]
         label = self.labels[idx]
+
+
+
+
+
         return torch.tensor(sequence, dtype=torch.float32), label, len(sequence)
 
 def collate_fn(batch):
@@ -42,13 +74,14 @@ def collate_fn(batch):
 data,labels=load_data()
 # 创建 DataLoader
 dataset = SequenceDataset(data, labels)
-dataloader = DataLoader(dataset, batch_size=50, shuffle=True, collate_fn=collate_fn)
+dataloader = DataLoader(dataset, batch_size=10, shuffle=True, collate_fn=collate_fn)
 # 定义 LSTM 模型
 class DynamicLSTM(nn.Module):
     def __init__(self, input_dim, hidden_dim, output_dim, num_layers):
         super(DynamicLSTM, self).__init__()
         self.hidden_dim = hidden_dim
-        self.lstm = nn.LSTM(input_dim, hidden_dim, num_layers, batch_first=True)
+        # self.gru=nn.GRU(input_dim, hidden_dim, num_layers)
+        self.lstm = nn.GRU(input_dim, hidden_dim, num_layers, batch_first=True)
         self.linear = nn.Linear(hidden_dim, output_dim)
 
     def forward(self, x, lengths):
@@ -57,7 +90,7 @@ class DynamicLSTM(nn.Module):
 
         # 使用 pack_padded_sequence 处理动态序列长度
         packed_input = pack_padded_sequence(x, lengths, batch_first=True, enforce_sorted=False)
-        packed_output, (hidden, cell) = self.lstm(packed_input)
+        packed_output, (hidden) = self.lstm(packed_input)
 
         # 使用 pad_packed_sequence 获取输出
         output, _ = pad_packed_sequence(packed_output, batch_first=True)
@@ -69,18 +102,25 @@ class DynamicLSTM(nn.Module):
         # 经过线性层处理得到最终输出
         output = self.linear(decoded)
         return output
+if __name__=="__main__":
+    model = DynamicLSTM(input_dim=2, hidden_dim=20, output_dim=1, num_layers=2)
+    optimizer = optim.Adam(model.parameters(), lr=0.001)
 
-model = DynamicLSTM(input_dim=3, hidden_dim=100, output_dim=2, num_layers=3)
-optimizer = optim.Adam(model.parameters(), lr=0.001)
+    # 训练模型
+    model.train()
+    for epoch in range(5):  # 训练 5 个 epoch
+        for sequences, labels, lengths in dataloader:
+            print(lengths)
+            print(sequences)
+            optimizer.zero_grad()
+            output = model(sequences, lengths)
+            loss = torch.nn.functional.mse_loss(output.squeeze(), labels.float())
+            # print(output.squeeze(), labels.float())
+            loss.backward()
+            optimizer.step()
+            print(f"Epoch {epoch}, Loss: {loss.item()}")
+    path = "save_model.pth"
 
-# 训练模型
-model.train()
-for epoch in range(20):  # 训练 5 个 epoch
-    for sequences, labels, lengths in dataloader:
-        optimizer.zero_grad()
-        output = model(sequences, lengths)
-        loss = torch.nn.functional.mse_loss(output.squeeze(), labels.float())
-        loss.backward()
-        optimizer.step()
-        print(f"Epoch {epoch}, Loss: {loss.item()}")
-        # print(output.squeeze(), labels.float())
+    # Save only the state dict
+    torch.save(model.state_dict(), path)
+            # print(output.squeeze(), labels.float())
