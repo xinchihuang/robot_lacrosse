@@ -59,11 +59,6 @@ class SequenceDataset(Dataset):
     def __getitem__(self, idx):
         sequence = self.data[idx]
         label = self.labels[idx]
-
-
-
-
-
         return torch.tensor(sequence, dtype=torch.float32), label, len(sequence)
 
 def collate_fn(batch):
