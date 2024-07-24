@@ -46,7 +46,7 @@ def move_upper_arm(target=-math.pi/6):
         motor1.send_motor_control_command(torque=0, target_angle=start_angle + i * step_length, target_velocity=0, Kp=100, Kd=1)
         time.sleep(0.001)
     print("end_angle", target)
-def throw_a_ball(motor1, motor2):
+def throw_a_ball():
     # move_lower_arm(target=math.pi/4)
     # move_lower_arm(target=math.pi/2)
     # move_upper_arm(target=-math.pi/12)
