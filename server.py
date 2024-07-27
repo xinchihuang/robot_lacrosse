@@ -31,8 +31,9 @@ def start_server():
             elif mode == "stop":
                 arm.stop()
                 arm.bus.shutdown()
-            print(f"Received: {data.decode()}")
-            client_socket.sendall(data)  # Echoes back the received data
+            arm_data_str=str(arm_data)
+            print(f"Received: {arm_data_str}")
+            client_socket.sendall(arm_data_str.encode())  # Echoes back the received data
         client_socket.close()
 
 if __name__ == '__main__':
