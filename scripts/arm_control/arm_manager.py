@@ -113,8 +113,8 @@ class Arm:
                                                Kd=1)
     def stop(self):
         self.motor1.disable()
-        self.motor1.disable()
-        self.motor1.disable()
+        self.motor2.disable()
+        self.motor3.disable()
         self.bus.shutdown()
 
 
