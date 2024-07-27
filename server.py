@@ -34,6 +34,9 @@ def start_server():
                 arm.enable_motors()
             elif mode=="s":
                 arm.stop()
+            elif mode == "stop":
+                arm.stop()
+                arm.bus.shutdown()
             print(f"Received: {data.decode()}")
             client_socket.sendall(data)  # Echoes back the received data
         client_socket.close()
