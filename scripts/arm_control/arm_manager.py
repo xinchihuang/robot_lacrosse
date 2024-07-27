@@ -16,8 +16,6 @@ class Arm:
         self.motor1_angle = 0
         self.motor2_angle = 0
         self.motor3_angle = 0
-        self.enable_motors()
-
     def enable_motors(self):
         """
         Enable motors, please direct arm to sky after it sound release it. Arm will lay down to initial position (link 2 lay down)
