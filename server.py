@@ -32,7 +32,7 @@ def start_server():
                 arm.stop()
                 arm.bus.shutdown()
             arm_data_str=str(arm_data)
-            print(f"Received: {arm_data_str}")
+            # print(f"Received: {arm_data_str}")
             client_socket.sendall(arm_data_str.encode())  # Echoes back the received data
         client_socket.close()
 

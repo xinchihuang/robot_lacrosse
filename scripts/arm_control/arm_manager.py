@@ -157,11 +157,11 @@ class Arm:
         # print("Current speed: ", current_speed)
         while True:
             # print("acceleration")
-            current_rad, current_speed = self.motor2.send_motor_control_command(torque=0, target_angle=target_rad,
+            current_rad, current_speed, current_tor = self.motor2.send_motor_control_command(torque=0, target_angle=target_rad,
                                                                                   target_velocity=target_speed,
-                                                                                  Kp=100, Kd=1)[1:3]
+                                                                                  Kp=100, Kd=1)[1:4]
             time_elapsed = time.time() - start_time
-            record_list.append([time_elapsed, current_rad, current_speed, 0])
+            record_list.append([time_elapsed, current_rad, current_speed, current_tor])
             if time_elapsed >1:
                 break
         time.sleep(2)
