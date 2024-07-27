@@ -86,7 +86,7 @@ def plot_parabola(raw_data,a,b,c):
 
 number=30
 
-ball_memory = np.load('../saved_ball_data/' + str(number) + '.npy')
+ball_memory = np.load('../saved_ball_data_old/' + str(number) + '.npy')
 check_point=30
 print(len(ball_memory))
 ball_memory=ball_memory[:,:]

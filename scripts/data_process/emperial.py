@@ -10,13 +10,13 @@ from sklearn.preprocessing import PolynomialFeatures
 from sklearn.pipeline import make_pipeline
 
 files_and_dirs = os.listdir(
-    "../saved_ball_data/")
+    "../saved_ball_data_old/")
 # Filter out directories, keeping only files
 files = [f for f in files_and_dirs if os.path.isfile(
-    os.path.join("../saved_ball_data/", f))]
+    os.path.join("../saved_ball_data_old/", f))]
 number = len(files)
 number=31
-ball_memory = np.load('../saved_ball_data/' + str(number-1) + '.npy')
+ball_memory = np.load('../saved_ball_data_old/' + str(number-1) + '.npy')
 i = 30
 print(len(ball_memory))
 print(ball_memory)

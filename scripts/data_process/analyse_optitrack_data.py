@@ -22,7 +22,7 @@ def root(a,b,c):
 for name in range(107,108):
     try:
         name=99
-        ball_memory=np.load('../saved_ball_data/'+str(name)+'.npy')
+        ball_memory=np.load('../saved_ball_data_old/'+str(name)+'.npy')
         i=50
         print(len(ball_memory))
 
