@@ -103,6 +103,11 @@ class Arm:
                                                Kd=1)
         self.motor3.send_motor_control_command(torque=0, target_angle=self.motor3_angle, target_velocity=0, Kp=100,
                                                Kd=1)
+    def stop(self):
+        self.motor1.disable()
+        self.motor1.disable()
+        self.motor1.disable()
+        self.bus.shutdown()
 
 
 
