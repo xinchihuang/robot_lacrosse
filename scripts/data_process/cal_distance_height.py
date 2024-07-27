@@ -6,13 +6,13 @@ import plotly.graph_objects as go
 from scipy.optimize import minimize
 from sympy import symbols, Eq, solve
 
-for i in range(90, 100):
-    if os.path.isfile(f'selected_data/selected_data/ball_data/{i}.npy'):
+for i in range(90, 91):
+    if os.path.isfile(f'../saved_ball_data/{i}.npy'):
 
         # 加载数据
-        torque=np.load(f'selected_data/selected_data/arm_data/{i}.npy')[-1][0]
-        brake_angle=np.load(f'selected_data/selected_data/arm_data/{i}.npy')[-2][0]
-        data = np.load(f'selected_data/selected_data/ball_data/{i}.npy')
+        torque=np.load(f'../saved_arm_data/{i}.npy')[-1][0]
+        brake_angle=np.load(f'../saved_arm_data/{i}.npy')[-2][0]
+        data = np.load(f'../saved_ball_data/{i}.npy')
 
 
         def filter_points(points, threshold=0.1):
