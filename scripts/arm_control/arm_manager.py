@@ -19,19 +19,39 @@ class Arm:
         self.enable_motors()
 
     def enable_motors(self):
-        self.motor1_angle = self.motor1.set_0_pos()[1]
-        self.motor2_angle = self.motor2.set_0_pos()[1]
-        self.motor3_angle = self.motor3.set_0_pos()[1]
+        """
+        Enable motors, please direct arm to sky after it sound release it. Arm will lay down to initial position (link 2 lay down)
+        """
+        self.motor1.set_0_pos()
+        self.motor2.set_0_pos()
+        self.motor3.set_0_pos()
         self.motor1.enable()
         self.motor2.enable()
         self.motor3.enable()
-
         self.motor1.send_motor_control_command(torque=0,target_angle=self.motor1_angle, target_velocity=0,
                                                                    Kp=100, Kd=1)
         self.motor2.send_motor_control_command(torque=0, target_angle=self.motor2_angle, target_velocity=0,
                                                                    Kp=100, Kd=1)
         self.motor3.send_motor_control_command(torque=0,target_angle=self.motor3_angle, target_velocity=0,
                                                                    Kp=100, Kd=1)
+        # warning to release arm
+        for i in range(6):
+            print("release arm motor, count down: " + str(5-i))
+            time.sleep(1)
+        # lay down link2 to 90 degree
+        step = 500
+        target = np.deg2rad(90)
+        step_length = target / step
+        # print("to parallel to ground")
+        for i in range(step):
+            self.motor2.send_motor_control_command(torque=0, target_angle= i * step_length,
+                                                   target_velocity=0,
+                                                   Kp=100, Kd=1)
+            time.sleep(0.001)
+        # print("done")
+        self.motor1_angle = 0
+        self.motor2_angle = np.deg2rad(90)
+        self.motor3_angle = 0
 
     def go_to(self, control_list):
         """
@@ -104,7 +124,7 @@ class Arm:
         return record_list
     time.sleep(1)
 
-    def throw_to_angle_with_speed(self, target_angle=45, target_speed=-20,lower_angle=0,upper_angle=90,lower_speed=0,upper_speed=30):
+    def throw_to_angle_with_speed(self, target_angle=45, target_speed=20,lower_angle=0,upper_angle=90,lower_speed=-30,upper_speed=0):
         """
 
         Args:
@@ -125,6 +145,7 @@ class Arm:
             target_angle = lower_angle
         elif target_angle> target_angle:
             target_angle=upper_angle
+        target_rad = np.deg2rad(target_angle) # if given 30deg, target_rad will be pi/3
 
         target_speed = -target_speed
         if target_speed < lower_speed:
@@ -133,7 +154,6 @@ class Arm:
             target_speed=upper_speed
 
 
-        target_rad = np.deg2rad(target_angle)
         # current_rad, current_speed = self.motor2.enable()[1:3]
         # print("Current angle: ", current_angle)
         # print("Current speed: ", current_speed)
@@ -144,12 +164,13 @@ class Arm:
                                                                                   Kp=100, Kd=1)[1:3]
             time_elapsed = time.time() - start_time
             record_list.append([time_elapsed, current_rad, current_speed, 0])
-            if time_elapsed >2:
+            if time_elapsed >1:
                 break
-        time.sleep(1)
+        time.sleep(2)
         current_rad, current_speed = self.motor2.send_motor_control_command(torque=0, target_angle=target_rad,
                                                                             target_velocity=target_speed,
                                                                             Kp=100, Kd=1)[1:3]
+        # link2 lay down
         step = 500
         target = np.deg2rad(90)
         step_length = (target - current_rad) / step
@@ -160,7 +181,7 @@ class Arm:
                                                    Kp=100, Kd=1)
             time.sleep(0.001)
         # print("done")
-        self.motor2_angle = 0
+        self.motor2_angle = np.deg2rad(90)
         return record_list
 
     def keep(self):
