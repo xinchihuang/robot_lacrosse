@@ -2,7 +2,7 @@ import socket
 
 def connect_to_server():
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_address = ('192.168.0.105', 12345)  # Replace <server_ip_address> with the server's IP address
+    server_address = ('192.168.0.104', 12345)  # Replace <server_ip_address> with the server's IP address
     client_socket.connect(server_address)
     print("Connected to server.")
 
