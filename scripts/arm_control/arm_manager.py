@@ -20,12 +20,12 @@ class Arm:
         """
         Enable motors, please direct arm to sky after it sound release it. Arm will lay down to initial position (link 2 lay down)
         """
-        self.motor1.set_0_pos()
-        self.motor2.set_0_pos()
-        self.motor3.set_0_pos()
         self.motor1.enable()
         self.motor2.enable()
         self.motor3.enable()
+        self.motor1.set_0_pos()
+        self.motor2.set_0_pos()
+        self.motor3.set_0_pos()
         self.motor1.send_motor_control_command(torque=0,target_angle=self.motor1_angle, target_velocity=0,
                                                                    Kp=100, Kd=1)
         self.motor2.send_motor_control_command(torque=0, target_angle=self.motor2_angle, target_velocity=0,
@@ -181,14 +181,6 @@ class Arm:
         # print("done")
         self.motor2_angle = np.deg2rad(90)
         return record_list
-
-    def keep(self):
-        self.motor1.send_motor_control_command(torque=0, target_angle=self.motor1_angle, target_velocity=0, Kp=100,
-                                               Kd=1)
-        self.motor2.send_motor_control_command(torque=0, target_angle=self.motor2_angle, target_velocity=0, Kp=100,
-                                               Kd=1)
-        self.motor3.send_motor_control_command(torque=0, target_angle=self.motor3_angle, target_velocity=0, Kp=100,
-                                               Kd=1)
     def stop(self):
         self.motor1.disable()
         self.motor2.disable()
