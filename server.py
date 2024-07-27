@@ -4,7 +4,7 @@ import random
 def start_server():
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.bind(('0.0.0.0', 12345))  # Bind to all interfaces on port 12345
-    server_socket.listen(5)
+    server_socket.listen(1)
     print("Server is listening for connections...")
 
     while True:
@@ -16,7 +16,6 @@ def start_server():
             data = client_socket.recv(1024)
             if not data:
                 break
-
             data_list= data.decode().split(",")
             mode=data_list[0]
             if mode=="t":
@@ -31,6 +30,8 @@ def start_server():
                 arm.go_to([[step, angle_1, angle_2, angle_3]])
                 arm_data = arm.throw_to_angle_with_torque(brake_angle=brake_angle, torque=torque)
                 arm.go_to([[step, angle_1, angle_2, angle_3]])
+            elif mode=="u":
+                arm.enable_motors()
             elif mode=="s":
                 arm.stop()
             print(f"Received: {data.decode()}")
