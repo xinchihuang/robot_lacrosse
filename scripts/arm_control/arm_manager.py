@@ -16,14 +16,22 @@ class Arm:
         self.motor1_angle = 0
         self.motor2_angle = 0
         self.motor3_angle = 0
+        self.enable_motors()
 
     def enable_motors(self):
         self.motor1_angle = self.motor1.set_0_pos()[1]
         self.motor2_angle = self.motor2.set_0_pos()[1]
         self.motor3_angle = self.motor3.set_0_pos()[1]
-        self.motor1_angle = self.motor1.enable()[1]
-        self.motor2_angle = self.motor2.enable()[1]
-        self.motor3_angle = self.motor3.enable()[1]
+        self.motor1.enable()
+        self.motor2.enable()
+        self.motor3.enable()
+
+        self.motor1.send_motor_control_command(torque=0,target_angle=self.motor1_angle, target_velocity=0,
+                                                                   Kp=100, Kd=1)
+        self.motor2.send_motor_control_command(torque=0, target_angle=self.motor2_angle, target_velocity=0,
+                                                                   Kp=100, Kd=1)
+        self.motor3.send_motor_control_command(torque=0,target_angle=self.motor3_angle, target_velocity=0,
+                                                                   Kp=100, Kd=1)
 
     def go_to(self, control_list):
         """

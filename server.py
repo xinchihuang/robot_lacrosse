@@ -11,6 +11,7 @@ def start_server():
         client_socket, addr = server_socket.accept()
         print(f"Connected to {addr}")
         arm = Arm()
+        arm.enable_motors()
         while True:
             data = client_socket.recv(1024)
             if not data:
@@ -20,13 +21,13 @@ def start_server():
             mode=data_list[0]
             if mode=="t":
                 print(data)
-                step = data_list[1]
-                angle_1 = data_list[2]
-                angle_2 = data_list[3]
-                angle_3 = data_list[4]
-                brake_angle = data_list[5]
+                step = int(data_list[1])
+                angle_1 = int(data_list[2])
+                angle_2 = int(data_list[3])
+                angle_3 = int(data_list[4])
+                brake_angle = int(data_list[5])
                 # brake_angle=65
-                torque = data_list[6]
+                torque = float(data_list[6])
                 arm.go_to([[step, angle_1, angle_2, angle_3]])
                 arm_data = arm.throw_to_angle_with_torque(brake_angle=brake_angle, torque=torque)
                 arm.go_to([[step, angle_1, angle_2, angle_3]])
