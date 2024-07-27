@@ -24,11 +24,11 @@ def start_server():
                 angle_1 = int(data_list[2])
                 angle_2 = int(data_list[3])
                 angle_3 = int(data_list[4])
-                brake_angle = int(data_list[5])
+                target_angle= int(data_list[5])
                 # brake_angle=65
-                torque = float(data_list[6])
+                target_speed = float(data_list[6])
                 arm.go_to([[step, angle_1, angle_2, angle_3]])
-                arm_data = arm.throw_to_angle_with_torque(brake_angle=brake_angle, torque=torque)
+                arm_data = arm.throw_to_angle_with_speed(target_angle=target_angle,target_speed=target_speed)
                 arm.go_to([[step, angle_1, angle_2, angle_3]])
             elif mode=="u":
                 arm.enable_motors()

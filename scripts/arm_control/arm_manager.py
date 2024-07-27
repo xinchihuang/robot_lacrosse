@@ -104,6 +104,65 @@ class Arm:
         return record_list
     time.sleep(1)
 
+    def throw_to_angle_with_speed(self, target_angle=45, target_speed=-20,lower_angle=0,upper_angle=90,lower_speed=0,upper_speed=30):
+        """
+
+        Args:
+            target_angle: degree from parallel to ground
+            target_speed: rad/s front is positive
+            lower_angle: limit of lower angle degree
+            upper_angle: limit of upper angle degree
+            lower_speed: limit of lower speed rad/s
+            upper_speed: limit of upper speed rad/s
+
+        Returns:
+
+        """
+        start_time = time.time()
+        record_list = []
+        target_angle=90 - target_angle
+        if target_angle < lower_angle:
+            target_angle = lower_angle
+        elif target_angle> target_angle:
+            target_angle=upper_angle
+
+        target_speed = -target_speed
+        if target_speed < lower_speed:
+            target_speed = lower_speed
+        elif target_speed> target_speed:
+            target_speed=upper_speed
+
+
+        target_rad = np.deg2rad(target_angle)
+        # current_rad, current_speed = self.motor2.enable()[1:3]
+        # print("Current angle: ", current_angle)
+        # print("Current speed: ", current_speed)
+        while True:
+            # print("acceleration")
+            current_rad, current_speed = self.motor2.send_motor_control_command(torque=0, target_angle=target_rad,
+                                                                                  target_velocity=target_speed,
+                                                                                  Kp=100, Kd=1)[1:3]
+            time_elapsed = time.time() - start_time
+            record_list.append([time_elapsed, current_rad, current_speed, 0])
+            if time_elapsed >2:
+                break
+        time.sleep(1)
+        current_rad, current_speed = self.motor2.send_motor_control_command(torque=0, target_angle=target_rad,
+                                                                            target_velocity=target_speed,
+                                                                            Kp=100, Kd=1)[1:3]
+        step = 500
+        target = np.deg2rad(90)
+        step_length = (target - current_rad) / step
+        # print("to parallel to ground")
+        for i in range(step):
+            self.motor2.send_motor_control_command(torque=0, target_angle=current_rad + i * step_length,
+                                                   target_velocity=0,
+                                                   Kp=100, Kd=1)
+            time.sleep(0.001)
+        # print("done")
+        self.motor2_angle = 0
+        return record_list
+
     def keep(self):
         self.motor1.send_motor_control_command(torque=0, target_angle=self.motor1_angle, target_velocity=0, Kp=100,
                                                Kd=1)
