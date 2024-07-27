@@ -8,6 +8,11 @@ from scripts.robomaster_executor.robomaster_executor import RoboMasterExecutor
 from scripts.data_process.check_parabola_point import check_parabola_point
 import os
 from scripts.arm_control.throw import throw_a_ball
+import torch
+
+
+from scripts.chassis_control.chassis_controller import *
+from scripts.lstm_scratch import DynamicLSTM
 
 # This is a callback function that gets connected to the NatNet client
 # and called once per mocap frame.
@@ -117,7 +122,38 @@ def landing_point_predictor(ball_memory,arm_hieght=0.3):
     # print(x1,x2,y1,y2)
     return landing_x,landing_y,1
 
+def landing_point_predictor_lstm(ball_memory,model,arm_hieght=0.3):
+    check_point = 30
+    ball_memory = ball_memory[0:, :]
+    ball_memory_to_fit = ball_memory[:check_point, :]
+    m, intercept, inlier_mask = fit_line(ball_memory)
+    new_points_to_fit = world_to_parabola_coordinate(ball_memory_to_fit, m, intercept)
+    new_points_to_fit = point_filters(new_points_to_fit)
 
+    sequence_length = torch.tensor([len(new_points_to_fit)])
+    # print(torch.tensor([new_points_to_fit]))
+    residual = model(torch.tensor(new_points_to_fit).float().unsqueeze(0), sequence_length)
+    new_points = world_to_parabola_coordinate(ball_memory, m, intercept)
+    new_points = point_filters(new_points)
+    # plot_parabola(ball_memory)
+    # plot_parabola(new_points)
+    a, b, c = fit_parabola(new_points_to_fit)
+    x1, x2 = root(a, b, c - 0.3)
+
+    if x1 == None or x2 == None:
+        return ball_memory[-1][0],ball_memory[-1][1],1
+
+    x0 = new_points[0][0]
+    d1 = (x1 - x0) ** 2
+    d2 = (x2 - x0) ** 2
+    if max(d1, d2) == d1:
+        landing_x_parabola = x1
+    else:
+        landing_x_parabola = x2
+    landing_x_parabola_m = landing_x_parabola - residual.item()
+    x_m, y_m = landing_x_parabola_m / math.sqrt(1 + m ** 2), landing_x_parabola_m * m / math.sqrt(
+        1 + m ** 2)
+    return x_m,y_m,1
 
 
 class Robot:
@@ -134,6 +170,9 @@ class Robot:
         self.save_data=[]
         self.saved=False
         self.state=None
+        self.model = DynamicLSTM(input_dim=2, hidden_dim=20, output_dim=1,
+                            num_layers=2)  # Initialize the same model structure
+        self.model.load_state_dict(torch.load("save_model.pth"))
 
     def process_optitrack_rigid_body_data(self, new_id, position, rotation):
         # print(position)
@@ -145,7 +184,7 @@ class Robot:
             landing_target_y = None
             if len(self.ball_memory) >= 20:
                 if check_parabola_point(self.ball_memory)==True:
-                    landing_target_x, landing_target_y, drop_t = landing_point_predictor(self.ball_memory, self.arm_pose[2])
+                    landing_target_x, landing_target_y, drop_t = landing_point_predictor_lstm(self.ball_memory,self.model, self.arm_pose[2])
                 # landing_target_x, landing_target_y, drop_t=0,0,1
                 # landing_time = drop_t - (self.ball_memory[-1][3] - self.ball_memory[0][3])
             if x_world**2+y_world**2<2.25 and not landing_target_x==None and not landing_target_y==None:
