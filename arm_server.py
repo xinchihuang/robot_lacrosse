@@ -3,6 +3,7 @@ from scripts.arm_control.arm_manager import Arm
 import random
 def start_server():
     arm = Arm()
+    arm.enable_motors()
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
         server_socket.bind(('0.0.0.0', 12345))  # 监听所有网络接口
         server_socket.listen(5)  # 可以调整监听的连接数
@@ -10,7 +11,7 @@ def start_server():
         while True:
             client_socket, addr = server_socket.accept()
             print(f"Connected to {addr}")
-            arm.enable_motors()
+
             data = client_socket.recv(10240)
             try:
                 if not data:
