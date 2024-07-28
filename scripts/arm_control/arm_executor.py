@@ -9,8 +9,8 @@ class ArmExecutor:
         print("Connected to server.")
     def send_command(self,command):
         self.client_socket.sendall(command.encode())
-        return_data =self.client_socket.recv(10240)
-        print(f"Received: {return_data.decode()}")
+        # return_data =self.client_socket.recv(10240)
+        # print(f"Received: {return_data.decode()}")
     def throw(self,desired_angle,desired_speed):
         command = f"throw,{desired_angle},{desired_speed}"
         self.send_command(command)
