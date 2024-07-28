@@ -12,7 +12,6 @@ def start_server():
             try:
                 client_socket, addr = server_socket.accept()
                 print(f"Connected to {addr}")
-
                 data = client_socket.recv(10240)
 
                 if not data:
