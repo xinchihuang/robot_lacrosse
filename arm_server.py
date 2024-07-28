@@ -25,16 +25,16 @@ def start_server():
 
                 mode = data_list[0]
                 arm_data_str = ''
-
+                print(mode)
                 try:
-                    if mode == "throw":
+                    if mode == 'throw':
                         target_angle = float(data_list[1])
                         target_speed = float(data_list[2])
                         arm_data = arm.throw_to_angle_with_speed(target_angle=target_angle, target_speed=target_speed)
                         arm_data_str = str(arm_data)
-                    elif mode == "reset":
+                    elif mode == 'reset':
                         arm.reset_ball()
-                    elif mode == "stop":
+                    elif mode == 'stop':
                         arm.stop()
                         arm.bus.shutdown()
                         break  # Break the loop to close the client socket
