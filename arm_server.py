@@ -3,7 +3,7 @@ from scripts.arm_control.arm_manager import Arm
 import random
 def start_server():
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.bind(('0.0.0.0', 12345))  # Bind to all interfaces on port 12345
+    server_socket.bind(('0.0.0.0', 12345))
     server_socket.listen(1)
     print("Server is listening for connections...")
     arm = Arm()
@@ -32,10 +32,11 @@ def start_server():
 
                 # print(f"Received: {arm_data_str}")
                 client_socket.sendall(arm_data_str.encode())  # Echoes back the received data
+                client_socket.close()
         except:
             print("Error Input!")
             pass
-        client_socket.close()
+
 
 if __name__ == '__main__':
     start_server()
