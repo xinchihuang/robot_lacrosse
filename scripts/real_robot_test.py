@@ -33,7 +33,7 @@ class Experiment:
 
         """
         while True:
-            command=input("Press enter command")
+            command=input("Press enter command: ")
             command_list=command.split(",")
             robot_name=command_list[0]
             for robot in self.robot_list:
