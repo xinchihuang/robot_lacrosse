@@ -13,7 +13,7 @@ def start_server():
         arm = Arm()
         arm.enable_motors()
         while True:
-            data = client_socket.recv(1024)
+            data = client_socket.recv(10240)
             if not data:
                 break
             data_list= data.decode().split(",")

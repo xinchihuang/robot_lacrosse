@@ -9,9 +9,9 @@ class Robot:
         self.chassis_executor=chassis_executor
         self.arm_executor = arm_executor
         # General Settings
-        self.g = 10
+        self.g = 9.8
         self.max_speed = 3
-        self.arm_pose = [-0.25, 0, 0.3]
+        self.arm_pose = [-0.23, 0, 0.3]
         # landing prediction
         self.ball_memory=[]
         self.save_data=[]
@@ -32,19 +32,16 @@ class Robot:
             landing_target_y = landing_target_y - math.sin(theta_world) * self.arm_pose[0]
             vx, vy, omega = central_controller([x_world, y_world, z_world], theta_world,
                                                [landing_target_x, landing_target_y, z_world], 0)
-            # print("landing point",landing_target_x,landing_target_y)
-            # if self.ball_memory[-1][2]<0.35:
-            #     print("landing")
-            # self.save_data.append(landing_time,landing_target_x,landing_target_y,self.ball_memory[-1][0],self.ball_memory[-1][1],self.ball_memory[-1][2])
-            # print(landing_time,landing_target_x,landing_target_y,self.ball_memory[-1],len(self.ball_memory))
         else:
             vx, vy, omega = 0, 0, 0
         return vx, vy, omega
     def execute(self,vx, vy, omega):
         self.chassis_executor.execute([vx, vy, omega])
     #
-    def arm_throw_ball(self):
-        pass
+    def arm_throw_ball(self,desired_angle,desired_speed):
+        self.state="throw"
+        self.arm_executor.execute(desired_angle,desired_speed)
+        self.state="idle"
             # self.executor.stop_robot()
 
 

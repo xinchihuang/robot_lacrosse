@@ -34,6 +34,7 @@ class Experiment:
             for robot in self.robot_list:
                 if robot.robot_name==robot_name:
                     robot.state=command_list[1]
+
                 print(robot.robot_name,robot.state)
     def process_optitrack_rigid_body_data(self, id, position, rotation):
         """
@@ -48,10 +49,9 @@ class Experiment:
         """
         # print(position)
         for robot in self.robot_list:
-
             if robot.robot_name == str(id):
                 x_world, y_world, z_world, theta_world = optitrack_coordinate_to_world_coordinates(position, rotation)
-                if robot.state=="catcher":
+                if robot.state=="catch":
                     robot.ball_memory=self.ball_memory
                     vx, vy, omega=robot.generate_cotrol(x_world, y_world, z_world, theta_world)
                     print(vx,vy,omega)
