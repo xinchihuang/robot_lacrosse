@@ -68,7 +68,7 @@ class Experiment:
                 if robot.state=="catch":
                     robot.ball_memory=self.ball_memory
                     vx, vy, omega=robot.generate_cotrol(x_world, y_world, z_world, theta_world)
-                    print(vx,vy,omega)
+                    # print(vx,vy,omega)
                     robot.execute(vx, vy, omega)
 
     def process_optitrack_ball_data(self, mocap_data):

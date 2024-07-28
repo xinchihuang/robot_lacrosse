@@ -41,7 +41,8 @@ class  RoboMasterExecutor:
         # self.ep_chassis.drive_speed(x=vx, y=-vy, z=-vz, timeout=0.02)
         # self.ep_chassis.drive_speed(x=0, y=0, z=0, timeout=5)
         if not vx==0 or not vy==0 or not vz==0:
-            print(vx,vy,vz,time.time())
+            # print(vx,vy,vz,time.time())
+             pass
         self.ep_chassis.drive_speed(x=vx, y=-vy, z=-vz, timeout=5)
         self.contols_count+=1
         # print(self.contols_count)
