@@ -14,18 +14,20 @@ def start_server():
                 print(f"Connected to {addr}")
                 while True:
                     data = client_socket.recv(10240)
-                    data_list= data.decode().split(",")
-                    mode=data_list[0]
-                    if mode=="throw":
-                        target_angle= float(data_list[1])
-                        target_speed = float(data_list[2])
-                        arm_data = arm.throw_to_angle_with_speed(target_angle=target_angle,target_speed=target_speed)
-                        # arm_data_str = str(arm_data)
-                    elif mode=="reset":
-                        arm.reset_ball()
-                    elif mode == "stop":
-                        arm.stop()
-                        arm.bus.shutdown()
+                    if not data:
+                        break
+                data_list= data.decode().split(",")
+                mode=data_list[0]
+                if mode=="throw":
+                    target_angle= float(data_list[1])
+                    target_speed = float(data_list[2])
+                    arm_data = arm.throw_to_angle_with_speed(target_angle=target_angle,target_speed=target_speed)
+                    # arm_data_str = str(arm_data)
+                elif mode=="reset":
+                    arm.reset_ball()
+                elif mode == "stop":
+                    arm.stop()
+                    arm.bus.shutdown()
 
                 # print(f"Received: {arm_data_str}")
                 # client_socket.sendall(arm_data_str.encode())  # Echoes back the received data
