@@ -302,13 +302,6 @@ def landing_point_predictor_ransac(ball_memory,arm_hieght=0.3):
     f = coefficients[2]
     g = coefficients[1]
     h = intercept + coefficients[0]
-
-
-
-
-
-
-
     x1,x2=root(c,d,e-arm_hieght)
     y1,y2=root(f,g,h-arm_hieght)
     if x1==None or x2==None or y1==None or y2==None:

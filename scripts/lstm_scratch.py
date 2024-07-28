@@ -66,10 +66,7 @@ def collate_fn(batch):
     sequences, labels, lengths = zip(*batch)
     padded_sequences = torch.nn.utils.rnn.pad_sequence(sequences, batch_first=True)
     return padded_sequences, torch.tensor(labels), torch.tensor(lengths)
-data,labels=load_data()
-# 创建 DataLoader
-dataset = SequenceDataset(data, labels)
-dataloader = DataLoader(dataset, batch_size=10, shuffle=True, collate_fn=collate_fn)
+
 # 定义 LSTM 模型
 class DynamicLSTM(nn.Module):
     def __init__(self, input_dim, hidden_dim, output_dim, num_layers):
@@ -98,6 +95,10 @@ class DynamicLSTM(nn.Module):
         output = self.linear(decoded)
         return output
 if __name__=="__main__":
+    data, labels = load_data()
+    # 创建 DataLoader
+    dataset = SequenceDataset(data, labels)
+    dataloader = DataLoader(dataset, batch_size=10, shuffle=True, collate_fn=collate_fn)
     model = DynamicLSTM(input_dim=2, hidden_dim=20, output_dim=1, num_layers=2)
     optimizer = optim.Adam(model.parameters(), lr=0.001)
 
