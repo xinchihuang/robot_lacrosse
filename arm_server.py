@@ -6,7 +6,7 @@ def start_server():
     arm.enable_motors()
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
         server_socket.bind(('0.0.0.0', 12345))  # 监听所有网络接口
-        server_socket.listen(5)  # 可以调整监听的连接数
+        server_socket.listen(100)  # 可以调整监听的连接数
         print("Server is listening for connections...")
         while True:
             client_socket, addr = server_socket.accept()
