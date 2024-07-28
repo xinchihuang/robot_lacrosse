@@ -9,9 +9,9 @@ def start_server():
         server_socket.listen(100)  # 可以调整监听的连接数
         print("Server is listening for connections...")
         while True:
+            client_socket, addr = server_socket.accept()
+            print(f"Connected to {addr}")
             try:
-                client_socket, addr = server_socket.accept()
-                print(f"Connected to {addr}")
                 while True:
                     data = client_socket.recv(10240)
                     if not data:
