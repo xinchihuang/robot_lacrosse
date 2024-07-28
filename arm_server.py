@@ -31,7 +31,7 @@ def start_server():
             except:
                 print("Error Input!")
                 pass
-            client_socket.close()
+        client_socket.close()
 
 if __name__ == '__main__':
     start_server()
