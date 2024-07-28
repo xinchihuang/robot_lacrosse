@@ -53,7 +53,7 @@ class Arm:
     def reset_ball(self):
         angle1 = self.motor1.enable()[1]
         angle2 = self.motor2.enable()[1]
-        print(self.motor2.enable()[3])
+        # print(self.motor2.enable()[3])
         angle3 = self.motor3.enable()[1]
 
         step = 150
