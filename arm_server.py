@@ -18,6 +18,7 @@ def start_server():
                 break
             data_list= data.decode().split(",")
             mode=data_list[0]
+            arm_data_str=''
             if mode=="throw":
                 target_angle= int(data_list[1])
                 target_speed = float(data_list[2])
