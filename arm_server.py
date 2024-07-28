@@ -13,12 +13,8 @@ def start_server():
                 client_socket, addr = server_socket.accept()
                 print(f"Connected to {addr}")
                 data = client_socket.recv(10240)
-
-                if not data:
-                    break
                 data_list= data.decode().split(",")
                 mode=data_list[0]
-                arm_data_str=''
                 if mode=="throw":
                     target_angle= float(data_list[1])
                     target_speed = float(data_list[2])
