@@ -28,13 +28,10 @@ def start_server():
                 elif mode == "stop":
                     arm.stop()
                     arm.bus.shutdown()
-
-                # print(f"Received: {arm_data_str}")
-                # client_socket.sendall(arm_data_str.encode())  # Echoes back the received data
             except:
                 print("Error Input!")
                 pass
-        client_socket.close()
+            client_socket.close()
 
 if __name__ == '__main__':
     start_server()
