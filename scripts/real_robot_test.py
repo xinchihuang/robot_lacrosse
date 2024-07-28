@@ -3,7 +3,7 @@ from scripts.optitrack_sdk.NatNetClient import NatNetClient
 from scripts.robomaster_executor.robomaster_executor import RoboMasterExecutor
 from scripts.arm_control.throw import throw_a_ball
 from Robot import Robot
-from  scripts.arm_control.arm_executor import ArmExecutor
+from scripts.arm_control.arm_executor import ArmExecutor
 from scripts.chassis_control.chassis_controller import optitrack_coordinate_to_world_coordinates
 from scripts.data_process.check_parabola_point import check_parabola_point
 from threading import Thread
