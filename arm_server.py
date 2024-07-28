@@ -28,6 +28,7 @@ def start_server():
                     elif mode == "stop":
                         arm.stop()
                         arm.bus.shutdown()
+                    client_socket.sendall(data_list.encode())
             except:
                 print("Error Input!")
                 pass
