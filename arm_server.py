@@ -2,17 +2,15 @@ import socket
 from scripts.arm_control.arm_manager import Arm
 import random
 def start_server():
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.bind(('192.168.0.105', 12345))  # Bind to all interfaces on port 12345
-    server_socket.listen(1)
-    print("Server is listening for connections...")
-
-    while True:
-        client_socket, addr = server_socket.accept()
-        print(f"Connected to {addr}")
-        arm = Arm()
-        arm.enable_motors()
+    arm = Arm()
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
+        server_socket.bind(('0.0.0.0', 12345))  # 监听所有网络接口
+        server_socket.listen(5)  # 可以调整监听的连接数
+        print("Server is listening for connections...")
         while True:
+            client_socket, addr = server_socket.accept()
+            print(f"Connected to {addr}")
+            arm.enable_motors()
             data = client_socket.recv(10240)
             try:
                 if not data:
@@ -36,7 +34,7 @@ def start_server():
             except:
                 print("Error Input!")
                 pass
-        client_socket.close()
+            client_socket.close()
 
 if __name__ == '__main__':
     start_server()
