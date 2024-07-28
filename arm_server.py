@@ -20,9 +20,6 @@ def start_server():
                 if not data:
                     break
                 data_list = data.decode().split(",")
-                if len(data_list) < 2:
-                    continue  # Skip processing if data is incomplete
-
                 mode = data_list[0]
                 arm_data_str = ''
                 print(mode)
