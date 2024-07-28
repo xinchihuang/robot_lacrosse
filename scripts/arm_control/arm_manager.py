@@ -50,41 +50,48 @@ class Arm:
         self.motor1_angle = 0
         self.motor2_angle = np.deg2rad(90)
         self.motor3_angle = 0
+    def reset_ball(self):
+        angle1 = self.motor1.enable()[1]
+        angle2 = self.motor2.enable()[1]
+        print(self.motor2.enable()[3])
+        angle3 = self.motor3.enable()[1]
 
-    def go_to(self, control_list):
-        """
+        step = 150
+        target1 = np.deg2rad(35)
+        step_length1 = (target1 - angle1) / step
 
-        Args:
-            control_list: [[step_number, motor1_target_angle, motor2_target_angle, motor3_target_angle], [step_number, motor1_target_angle, motor2_target_angle, motor3_target_angle]]
+        for i in range(step):
+            self.motor1.send_motor_control_command(torque=0, target_angle=angle1 + i * step_length1, target_velocity=0, Kp=100, Kd=1)
+            time.sleep(0.001)
 
-        Returns:
+        time.sleep(1)
 
-        """
-        for control in control_list:
-            move_step = control[0]
-            motor1_target_angle = np.deg2rad(control[1])
-            motor2_target_angle = np.deg2rad(control[2])
-            motor3_target_angle = np.deg2rad(control[3])
-            motor1_start_angle = self.motor1.enable()[1]
-            motor2_start_angle = self.motor2.enable()[1]
-            motor3_start_angle = self.motor3.enable()[1]
-            motor1_step_angle = (motor1_target_angle - motor1_start_angle) / move_step
-            motor2_step_angle = (motor2_target_angle - motor2_start_angle) / move_step
-            motor3_step_angle = (motor3_target_angle - motor3_start_angle) / move_step
-            for i in range(move_step):
-                self.motor1_angle = self.motor1.send_motor_control_command(torque=0,
-                                                                           target_angle=motor1_start_angle + motor1_step_angle * (
-                                                                                   i + 1), target_velocity=0,
-                                                                           Kp=100, Kd=1)[1]
-                self.motor2_angle = self.motor2.send_motor_control_command(torque=0,
-                                                                           target_angle=motor2_start_angle + motor2_step_angle * (
-                                                                                   i + 1), target_velocity=0,
-                                                                           Kp=100, Kd=1)[1]
-                self.motor3_angle = self.motor3.send_motor_control_command(torque=0,
-                                                                           target_angle=motor3_start_angle + motor3_step_angle * (
-                                                                                   i + 1), target_velocity=0,
-                                                                           Kp=100, Kd=1)[1]
-            time.sleep(1)
+        angle1 = self.motor1.enable()[1]
+        angle2 = self.motor2.enable()[1]
+        angle3 = self.motor3.enable()[1]
+
+        step = 150
+        target1 = np.deg2rad(-30)
+        step_length1 = (target1 - angle1) / step
+
+        for i in range(step):
+            self.motor1.send_motor_control_command(torque=0, target_angle=angle1 + i * step_length1, target_velocity=0, Kp=100, Kd=1)
+            time.sleep(0.001)
+
+        time.sleep(1)
+
+        angle1 = self.motor1.enable()[1]
+        angle2 = self.motor2.enable()[1]
+        angle3 = self.motor3.enable()[1]
+
+        step = 600
+        target1 = np.deg2rad(0)
+        step_length1 = (target1 - angle1) / step
+
+        for i in range(step):
+            self.motor1.send_motor_control_command(torque=0, target_angle=angle1 + i * step_length1, target_velocity=0, Kp=100, Kd=1)
+            time.sleep(0.001)
+
 
     def throw_to_angle_with_torque(self, brake_angle=np.deg2rad(45), torque=-12):
         start_time = time.time()

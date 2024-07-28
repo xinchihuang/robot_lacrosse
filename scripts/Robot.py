@@ -39,10 +39,12 @@ class Robot:
         self.chassis_executor.execute([vx, vy, omega])
     #
     def arm_throw_ball(self,desired_angle,desired_speed):
-        self.state="throw"
-        self.arm_executor.execute(desired_angle,desired_speed)
+        self.arm_executor.throw(desired_angle,desired_speed)
         self.state="idle"
             # self.executor.stop_robot()
+    def reset_arm(self):
+        self.arm_executor.reset()
+        self.state="idle"
 
 
 

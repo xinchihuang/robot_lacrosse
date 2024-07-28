@@ -18,16 +18,12 @@ def start_server():
                 break
             data_list= data.decode().split(",")
             mode=data_list[0]
-            if mode=="t":
-                print(data)
+            if mode=="throw":
                 target_angle= int(data_list[1])
-                # brake_angle=65
                 target_speed = float(data_list[2])
                 arm_data = arm.throw_to_angle_with_speed(target_angle=target_angle,target_speed=target_speed)
-            elif mode=="u":
-                arm.enable_motors()
-            elif mode=="s":
-                arm.stop()
+            elif mode=="reset":
+                arm.reset_ball()
             elif mode == "stop":
                 arm.stop()
                 arm.bus.shutdown()

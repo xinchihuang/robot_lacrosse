@@ -27,15 +27,28 @@ class Experiment:
         self.ball_memory=[]
         self.robot_list=[]
     def handle_command(self):
+        """
+        Handles commands name,state(catch,reset,throw),extra command(desired arm angle,desired speed)
+        Returns:
+
+        """
         while True:
             command=input("Press enter command")
             command_list=command.split(",")
             robot_name=command_list[0]
             for robot in self.robot_list:
                 if robot.robot_name==robot_name:
-                    robot.state=command_list[1]
-
-                print(robot.robot_name,robot.state)
+                    state=command_list[1]
+                    if state == "catch":
+                        robot.state=state
+                    elif state=="reset":
+                        robot.state = state
+                        robot.reset_arm()
+                    elif state=="throw":
+                        robot.state = state
+                        angle=float(command_list[2])
+                        speed=float(command_list[3])
+                        robot.arm_throw_ball(angle,speed)
     def process_optitrack_rigid_body_data(self, id, position, rotation):
         """
 
