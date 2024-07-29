@@ -16,9 +16,9 @@ import math
 import time
 from robomaster import robot
 class  RoboMasterExecutor:
-    def __init__(self):
+    def __init__(self,sn=None):
         ep_robot = robot.Robot()
-        ep_robot.initialize(conn_type="sta")
+        ep_robot.initialize(conn_type="sta",sn=sn)
         self.ep_chassis = ep_robot.chassis
         self.max_speed=3.5
         self.max_rotation_speed=10
