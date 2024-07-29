@@ -168,10 +168,10 @@ class Arm:
                                                                                   target_velocity=target_speed,
                                                                                   Kp=100, Kd=1)[1:4]
             time_elapsed = time.time() - start_time
-            record_list.append([time_elapsed, current_rad, current_speed, current_tor])
-            if time_elapsed >1:
+            record_list.append([round(time_elapsed,8), round(current_rad,8), round(current_speed,8), round(current_tor,8)])
+            if time_elapsed >0.25:
                 break
-        time.sleep(2)
+        time.sleep(1.75)
         current_rad, current_speed = self.motor2.send_motor_control_command(torque=0, target_angle=target_rad,
                                                                             target_velocity=target_speed,
                                                                             Kp=100, Kd=1)[1:3]
