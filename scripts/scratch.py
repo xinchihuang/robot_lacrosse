@@ -1,52 +1,21 @@
-import numpy as np
-import time
-import can
-from pcan_cybergear import CANMotorController
+# Reusing the previously updated quaternion components for calculation
+# Convert updated quaternion to Euler angles (roll, pitch, yaw) again
+import math
+# w=-0.0025392191018909216
+# x=-0.2123934030532837
+# y=0.004783613607287407
+# z=0.9771692752838135
+w=0.3916
+x=-0.00814
+y=-0.9201
+z=0.00667
+phi_updated_again = math.atan2(2 * (w * x + y * z), 1 - 2 * (x**2 + y**2))
+theta_updated_again = math.asin(2 * (w * y - z * x))
+psi_updated_again = math.atan2(2 * (w * z + x * y), 1 - 2 * (y**2 + z**2))
 
-bus = can.interface.Bus(interface="pcan", channel="PCAN_USBBUS1", bitrate=1000000)
-motor1 = CANMotorController(bus, motor_id=101, main_can_id=254)
-motor2 = CANMotorController(bus, motor_id=102, main_can_id=254)
-motor3 = CANMotorController(bus, motor_id=103, main_can_id=254)
+# Convert radians to degrees again
+phi_updated_again_deg = math.degrees(phi_updated_again)
+theta_updated_again_deg = math.degrees(theta_updated_again)
+psi_updated_again_deg = math.degrees(psi_updated_again)
 
-angle1 = motor1.enable()[1]
-angle2 = motor2.enable()[1]
-print(motor2.enable()[3])
-angle3 = motor3.enable()[1]
-
-step = 150
-target1 = np.deg2rad(35)
-step_length1 = (target1 - angle1) / step
-
-for i in range(step):
-    motor1.send_motor_control_command(torque=0, target_angle=angle1 + i * step_length1, target_velocity=0, Kp=100, Kd=1)
-    time.sleep(0.001)
-
-time.sleep(1)
-
-angle1 = motor1.enable()[1]
-angle2 = motor2.enable()[1]
-angle3 = motor3.enable()[1]
-
-step = 150
-target1 = np.deg2rad(-30)
-step_length1 = (target1 - angle1) / step
-
-for i in range(step):
-    motor1.send_motor_control_command(torque=0, target_angle=angle1 + i * step_length1, target_velocity=0, Kp=100, Kd=1)
-    time.sleep(0.001)
-
-time.sleep(1)
-
-angle1 = motor1.enable()[1]
-angle2 = motor2.enable()[1]
-angle3 = motor3.enable()[1]
-
-step = 600
-target1 = np.deg2rad(0)
-step_length1 = (target1 - angle1) / step
-
-for i in range(step):
-    motor1.send_motor_control_command(torque=0, target_angle=angle1 + i * step_length1, target_velocity=0, Kp=100, Kd=1)
-    time.sleep(0.001)
-
-bus.shutdown()
+print(phi_updated_again_deg, theta_updated_again_deg, psi_updated_again_deg)

@@ -41,8 +41,8 @@ def start_server():
                 except IndexError as ie:
                     print(f"Index error: {ie}")
 
-                if arm_data_str:
-                    client_socket.sendall(arm_data_str.encode())  # Echoes back the received data
+
+                client_socket.sendall(arm_data_str.encode())  # Echoes back the received data
 
             client_socket.close()
         except Exception as e:

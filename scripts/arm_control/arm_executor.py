@@ -7,13 +7,11 @@ class ArmExecutor:
         # server_address = ('192.168.0.105', 12345)  # Replace <server_ip_address> with the server's IP address
         self.client_socket.connect(self.server_address)
         print("Connected to server.")
-    def send_command(self,command):
-        self.client_socket.sendall(command.encode())
-        # return_data =self.client_socket.recv(10240)
-        # print(f"Received: {return_data.decode()}")
+
     def throw(self,desired_angle,desired_speed):
         command = f"throw,{desired_angle},{desired_speed}"
-        self.send_command(command)
+        return_msg=self.client_socket.sendall(command.encode())
+        return return_msg
     def reset(self):
         command = f"reset"
-        self.send_command(command)
+        self.client_socket.sendall(command.encode())

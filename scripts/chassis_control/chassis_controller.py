@@ -7,6 +7,8 @@ from sklearn.pipeline import make_pipeline
 import plotly.graph_objects as go
 from scripts.utils import *
 # from scipy.optimize import least_squares,fsolve
+from scripts.lstm_scratch import DynamicLSTM
+import torch
 def plot_parabola(data, check_points=90):
     print(len(data))
     x = data[:, 0]
@@ -61,8 +63,12 @@ def optitrack_coordinate_to_world_coordinates(position, rotation):
     x_world=position[0]
     y_world=-position[2]
     z_world=position[1]
-    theta_world=euler_angles[1]
-    return x_world, y_world, z_world,-theta_world
+    theta_world=-euler_angles[1]
+    if theta_world>math.pi/2:
+        theta_world = math.pi-theta_world
+    elif theta_world <-math.pi/2:
+        theta_world = -math.pi - theta_world
+    return x_world, y_world, z_world, -theta_world
 def global_control_to_local_control(self_rotation,controls):
     """
     Transfer the global control to robot's local control
@@ -354,77 +360,33 @@ def landing_point_predictor_ransac2(ball_memory, arm_hieght=0.3):
     x, y = landing_x_parabola / math.sqrt(1 + m ** 2), landing_x_parabola * m / math.sqrt(
         1 + m ** 2)
     return x, y+intercept, 1
-# def landing_point_predictor_3(ball_memory,arm_hieght=0.3):
-#     """
-#     Calculates the landing point of the ball
-#     (need to add time predictor later)
-#     Args:
-#         ball_memory: the observed ball memory
-#         arm_hieght: the net's height
-#
-#     Returns:
-#
-#     """
-#
-#     ball_memory=np.array(ball_memory)
-#     x = ball_memory[:, 0]
-#     y = ball_memory[:, 1]
-#     z = ball_memory[:, 2]
-#     def line(param,x):
-#         a,b=param
-#         return a*x+b
-#     def parabola(params, x, y):
-#         a, b, c, d, e, f = params
-#         return a * x ** 2 + b * y ** 2 + c * x * y + d * x + e * y + f
-#     # Define the residuals function
-#     def residuals_line(params, x, y):
-#         return line(params, x) - y
-#     def residuals_parabola(params, x, y, z):
-#         return parabola(params, x, y) - z
-#
-#     initial_guess_line = [0, 0]
-#     initial_guess_parabola = [1, 1, 1, 1, 1, 1]
-#     fit_params_line = least_squares(residuals_line, initial_guess_line, args=(x, y)).x
-#     fit_params_parabola= least_squares(residuals_parabola, initial_guess_parabola, args=(x, y, z)).x
-#     fit_params=np.concatenate([fit_params_parabola,fit_params_line],axis=0)
-#     # print(fit_params)
-#     # The function to find x, y for a given z
-#     def equations(p, params, z_given):
-#         x, y = p
-#         a, b, c, d, e, f, g, h = params
-#         return [a * x ** 2 + b * y ** 2 + c * x * y + d * x + e * y + f - z_given,
-#                 g*x + h ]
-#     # Initial guess for x and y
-#     initial_guess_solve = [0, 1]
-#     # Solve for x and y
-#     x_sol, y_sol = fsolve(equations, initial_guess_solve, args=(fit_params, arm_hieght))
-#     # print("solved",x_sol,y_sol)
-#     return x_sol, y_sol
-#
-#     # Generate y values for the fit
-#     # x1,x2=root(c,d,e-arm_hieght)
-#     # y1,y2=root(f,g,h-arm_hieght)
-#
-#     # if x1==None or x2==None or y1==None or y2==None:
-#     #     # print("Error", len(ball_memory))
-#     #     return ball_memory[-1][0],ball_memory[-1][1],1
-#     # x0=ball_memory[0][0]
-#     # y0=ball_memory[0][1]
-#     # d1 = (x1 - x0) ** 2 + (y1 - y0) ** 2
-#     # d2 = (x2 - x0) ** 2 + (y1 - y0) ** 2
-#     # d3 = (x1 - x0) ** 2 + (y2 - y0) ** 2
-#     # d4 = (x2 - x0) ** 2 + (y2 - y0) ** 2
-#     # if max(d1,d2,d3,d4)==d1:
-#     #     landing_x=x1
-#     #     landing_y=y1
-#     # elif max(d1,d2,d3,d4)==d2:
-#     #     landing_x=x2
-#     #     landing_y=y1
-#     # elif max(d1,d2,d3,d4)==d3:
-#     #     landing_x=x1
-#     #     landing_y=y2
-#     # elif max(d1,d2,d3,d4)==d4:
-#     #     landing_x=x2
-#     #     landing_y=y2
-#     # # print(x1,x2,y1,y2)
-#     # return landing_x,landing_y,1
+def landing_point_predictor_lstm(ball_memory,model, arm_hieght=0.3,check_point=30):
+    ball_memory_to_fit = ball_memory[:check_point, :]
+    m, intercept, inlier_mask = fit_line(ball_memory)
+    new_points_to_fit = world_to_parabola_coordinate(ball_memory_to_fit, m, intercept)
+    new_points_to_fit = point_filters(new_points_to_fit)
+
+    sequence_length = torch.tensor([len(new_points_to_fit)])
+    # print(torch.tensor([new_points_to_fit]))
+    residual = model(torch.tensor(new_points_to_fit).float().unsqueeze(0), sequence_length)
+    new_points = world_to_parabola_coordinate(ball_memory, m, intercept)
+    new_points = point_filters(new_points)
+    # plot_parabola(ball_memory)
+    # plot_parabola(new_points)
+    a, b, c = fit_parabola(new_points_to_fit)
+    x1, x2 = root(a, b, c - 0.3)
+
+    if x1 == None or x2 == None:
+        return ball_memory[-1][0],ball_memory[-1][1],1
+    x0 = new_points[0][0]
+    d1 = (x1 - x0) ** 2
+    d2 = (x2 - x0) ** 2
+    if max(d1, d2) == d1:
+        landing_x_parabola = x1
+    else:
+        landing_x_parabola = x2
+
+    landing_x_parabola_m = landing_x_parabola - residual.item()
+    x_m, y_m = landing_x_parabola_m / math.sqrt(1 + m ** 2), landing_x_parabola_m * m / math.sqrt(
+        1 + m ** 2)
+    return x_m,y_m,1

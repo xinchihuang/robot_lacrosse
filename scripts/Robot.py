@@ -1,13 +1,19 @@
 import math
 import time
 from scripts.data_process.check_parabola_point import check_parabola_point
-from scripts.chassis_control.chassis_controller import optitrack_coordinate_to_world_coordinates, central_controller,landing_point_predictor
+from scripts.chassis_control.chassis_controller import optitrack_coordinate_to_world_coordinates, central_controller,landing_point_predictor,landing_point_predictor_lstm
+from scripts.lstm_scratch import DynamicLSTM
 
+import torch
+from utils import calculate_rotation_angle
 class Robot:
     def __init__(self, robot_name,chassis_executor=None,arm_executor=None):
         self.robot_name=robot_name
         self.chassis_executor=chassis_executor
         self.arm_executor = arm_executor
+        self.model = DynamicLSTM(input_dim=2, hidden_dim=20, output_dim=1,
+                            num_layers=2)  # Initialize the same model structure
+        self.model.load_state_dict(torch.load("save_model.pth"))
         # General Settings
         self.g = 9.8
         self.max_speed = 3
@@ -18,13 +24,14 @@ class Robot:
         self.saved=False
         self.state=None
         self.parabola_state=False
+        self.robot_self_pose=None
         self.robot_arm_list=[1,1,1]
     def generate_cotrol(self,x_world, y_world, z_world, theta_world):
         landing_target_x = None
         landing_target_y = None
         if len(self.ball_memory) >= 20:
             if check_parabola_point(self.ball_memory) == True:
-                landing_target_x, landing_target_y, drop_t = landing_point_predictor(self.ball_memory, self.arm_pose[2])
+                landing_target_x, landing_target_y, drop_t = landing_point_predictor_lstm(self.ball_memory,self.model, self.arm_pose[2])
             # landing_target_x, landing_target_y, drop_t=0,0,1
             # landing_time = drop_t - (self.ball_memory[-1][3] - self.ball_memory[0][3])
         if x_world ** 2 + y_world ** 2 < 2.25 and not landing_target_x == None and not landing_target_y == None:
@@ -35,6 +42,14 @@ class Robot:
         else:
             vx, vy, omega = 0, 0, 0
         return vx, vy, omega
+    def rotate(self,self_pose,direction_pose):
+        target_direction = [direction_pose[0] - self_pose[0],
+                            direction_pose[1] - self_pose[1]]
+        self_direction = [math.cos(self_pose[3]), math.sin(self_pose[3])]
+        d_theta = calculate_rotation_angle(self_direction, target_direction)
+
+        omega=math.degrees(5*d_theta)
+        return 0,0,omega
     def execute(self,vx, vy, omega):
         self.chassis_executor.execute([vx, vy, omega])
     #
