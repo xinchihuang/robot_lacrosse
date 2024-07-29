@@ -11,7 +11,7 @@ class Robot:
         # General Settings
         self.g = 9.8
         self.max_speed = 3
-        self.arm_pose = [-0.23, 0, 0.3]
+        self.arm_pose = [-0.28, 0, 0.3]
         # landing prediction
         self.ball_memory=[]
         self.save_data=[]
