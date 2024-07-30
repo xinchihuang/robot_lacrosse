@@ -31,7 +31,7 @@ class Robot:
         landing_target_y = None
         if len(self.ball_memory) >= 20:
             if check_parabola_point(self.ball_memory) == True:
-                landing_target_x, landing_target_y, drop_t = landing_point_predictor_lstm(self.ball_memory,self.model, self.arm_pose[2])
+                landing_target_x, landing_target_y, drop_t = landing_point_predictor(self.model, self.arm_pose[2])
             # landing_target_x, landing_target_y, drop_t=0,0,1
             # landing_time = drop_t - (self.ball_memory[-1][3] - self.ball_memory[0][3])
         if x_world ** 2 + y_world ** 2 < 2.25 and not landing_target_x == None and not landing_target_y == None:
@@ -46,10 +46,12 @@ class Robot:
         target_direction = [direction_pose[0] - self_pose[0],
                             direction_pose[1] - self_pose[1]]
         self_direction = [math.cos(self_pose[3]), math.sin(self_pose[3])]
-        d_theta = calculate_rotation_angle(self_direction, target_direction)
 
-        omega=math.degrees(5*d_theta)
-        return 0,0,omega
+        d_theta = calculate_rotation_angle(self_direction, target_direction)
+        # print(target_direction, self_direction,d_theta)
+        # omega=math.degrees(d_theta)
+        # print(d_theta)
+        return 0,0,d_theta
     def execute(self,vx, vy, omega):
         self.chassis_executor.execute([vx, vy, omega])
     #

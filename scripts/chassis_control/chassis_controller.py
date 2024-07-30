@@ -8,7 +8,9 @@ import plotly.graph_objects as go
 from scripts.utils import *
 # from scipy.optimize import least_squares,fsolve
 from scripts.lstm_scratch import DynamicLSTM
+from scipy.spatial.transform import Rotation as R
 import torch
+import math
 def plot_parabola(data, check_points=90):
     print(len(data))
     x = data[:, 0]
@@ -58,17 +60,23 @@ def optitrack_coordinate_to_world_coordinates(position, rotation):
     Returns:
 
     """
-    q = Quaternion(rotation[0], rotation[1], rotation[2], rotation[3])
-    euler_angles = q.to_euler(degrees=False)
+
+
     x_world=position[0]
     y_world=-position[2]
     z_world=position[1]
-    theta_world=-euler_angles[1]
-    if theta_world>math.pi/2:
-        theta_world = math.pi-theta_world
-    elif theta_world <-math.pi/2:
-        theta_world = -math.pi - theta_world
-    return x_world, y_world, z_world, -theta_world
+    x,y,z,w = rotation[0],  rotation[1], rotation[2],  rotation[3]
+    q=Quaternion(w,x,y,z)
+    euler=q.to_euler(degrees=False)
+
+    r_y=euler[1]
+    if -math.sqrt(2)/2<w<0:
+        theta=-math.pi+r_y
+    elif 0<w<-math.sqrt(2)/2:
+        theta=math.pi-r_y
+    else:
+        theta=r_y
+    return x_world, y_world, z_world, theta
 def global_control_to_local_control(self_rotation,controls):
     """
     Transfer the global control to robot's local control
@@ -361,15 +369,18 @@ def landing_point_predictor_ransac2(ball_memory, arm_hieght=0.3):
         1 + m ** 2)
     return x, y+intercept, 1
 def landing_point_predictor_lstm(ball_memory,model, arm_hieght=0.3,check_point=30):
-    ball_memory_to_fit = ball_memory[:check_point, :]
-    m, intercept, inlier_mask = fit_line(ball_memory)
+    # print(ball_memory)
+    ball_memory=np.array(ball_memory)
+    ball_memory_to_fit = ball_memory[:check_point]
+    m, intercept, inlier_mask = fit_line(ball_memory_to_fit)
     new_points_to_fit = world_to_parabola_coordinate(ball_memory_to_fit, m, intercept)
     new_points_to_fit = point_filters(new_points_to_fit)
 
     sequence_length = torch.tensor([len(new_points_to_fit)])
     # print(torch.tensor([new_points_to_fit]))
+    # print("get_input")
     residual = model(torch.tensor(new_points_to_fit).float().unsqueeze(0), sequence_length)
-    new_points = world_to_parabola_coordinate(ball_memory, m, intercept)
+    new_points = world_to_parabola_coordinate(ball_memory_to_fit, m, intercept)
     new_points = point_filters(new_points)
     # plot_parabola(ball_memory)
     # plot_parabola(new_points)
@@ -386,7 +397,7 @@ def landing_point_predictor_lstm(ball_memory,model, arm_hieght=0.3,check_point=3
     else:
         landing_x_parabola = x2
 
-    landing_x_parabola_m = landing_x_parabola - residual.item()
+    landing_x_parabola_m = landing_x_parabola + residual.item()
     x_m, y_m = landing_x_parabola_m / math.sqrt(1 + m ** 2), landing_x_parabola_m * m / math.sqrt(
         1 + m ** 2)
-    return x_m,y_m,1
+    return x_m,y_m+intercept,1
