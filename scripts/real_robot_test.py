@@ -209,15 +209,15 @@ class Experiment:
 if __name__ == "__main__":
     robot1_chassis_executor=RoboMasterExecutor(sn="3JKCH8800101C2")
     robot1_arm_executor = ArmExecutor(('192.168.0.105', 12345))
-    robot2_chassis_executor = RoboMasterExecutor(sn="3JKCH7T00100M9")
-    robot2_arm_executor = ArmExecutor(('192.168.0.104', 12345))
+    # robot2_chassis_executor = RoboMasterExecutor(sn="3JKCH7T00100M9")
+    # robot2_arm_executor = ArmExecutor(('192.168.0.104', 12345))
     # robot1_chassis_executor=None
     # robot1_arm_executor = None
     # robot2_chassis_executor = None
     # robot2_arm_executor=None
 
     robot1 = Robot('1', robot1_chassis_executor, robot1_arm_executor)
-    robot2 = Robot('2', robot2_chassis_executor,robot2_arm_executor)
+    # robot2 = Robot('2', robot2_chassis_executor,robot2_arm_executor)
     experiment=Experiment()
     experiment.robot_list.append(robot1)
     experiment.robot_list.append(robot2)

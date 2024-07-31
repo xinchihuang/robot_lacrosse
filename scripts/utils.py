@@ -70,6 +70,7 @@ def check_distance(position1,position2):
     return ((position1.x-position2.x)**2+(position1.y-position2.y)**2+(position1.z-position2.z)**2)**0.5
 
 def fit_line(ball_memory):
+    ball_memory=np.array(ball_memory)
     x = ball_memory[:, 0]
     x_reshape = x.reshape(-1, 1)
     y = ball_memory[:, 1]
