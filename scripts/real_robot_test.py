@@ -220,7 +220,7 @@ if __name__ == "__main__":
     # robot2 = Robot('2', robot2_chassis_executor,robot2_arm_executor)
     experiment=Experiment()
     experiment.robot_list.append(robot1)
-    experiment.robot_list.append(robot2)
+    # experiment.robot_list.append(robot2)
 
     optionsDict = {}
     optionsDict["clientAddress"] = "127.0.0.1"
