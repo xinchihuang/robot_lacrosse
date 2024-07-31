@@ -368,7 +368,7 @@ def landing_point_predictor_ransac2(ball_memory, arm_hieght=0.3):
     x, y = landing_x_parabola / math.sqrt(1 + m ** 2), landing_x_parabola * m / math.sqrt(
         1 + m ** 2)
     return x, y+intercept, 1
-def landing_point_predictor_lstm(ball_memory,model, arm_hieght=0.3,check_point=30):
+def landing_point_predictor_lstm(ball_memory,model,self_pose, arm_hieght=0.3,check_point=30):
     # print(ball_memory)
     ball_memory=np.array(ball_memory)
     ball_memory_to_fit = ball_memory[:check_point]
@@ -380,23 +380,25 @@ def landing_point_predictor_lstm(ball_memory,model, arm_hieght=0.3,check_point=3
     # print(torch.tensor([new_points_to_fit]))
     # print("get_input")
     residual = model(torch.tensor(new_points_to_fit).float().unsqueeze(0), sequence_length)
-    new_points = world_to_parabola_coordinate(ball_memory_to_fit, m, intercept)
-    new_points = point_filters(new_points)
+    # print(self_pose,m,intercept)
+    self_pose_parabola_plane=world_to_parabola_coordinate([self_pose[:3]], m, intercept)
+    # print(self_pose_parabola_plane)
     # plot_parabola(ball_memory)
     # plot_parabola(new_points)
     a, b, c = fit_parabola(new_points_to_fit)
     x1, x2 = root(a, b, c - 0.3)
 
     if x1 == None or x2 == None:
-        return ball_memory[-1][0],ball_memory[-1][1],1
-    x0 = new_points[0][0]
+        return self_pose_parabola_plane[0], self_pose_parabola_plane[1],1
+    x0 = self_pose_parabola_plane[0][0]
+
     d1 = (x1 - x0) ** 2
     d2 = (x2 - x0) ** 2
-    if max(d1, d2) == d1:
+    if min(d1, d2) == d1:
         landing_x_parabola = x1
     else:
         landing_x_parabola = x2
-
+    print(x1,x2,x0,landing_x_parabola)
     landing_x_parabola_m = landing_x_parabola + residual.item()
     x_m, y_m = landing_x_parabola_m / math.sqrt(1 + m ** 2), landing_x_parabola_m * m / math.sqrt(
         1 + m ** 2)

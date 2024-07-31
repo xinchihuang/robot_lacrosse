@@ -127,8 +127,8 @@ def point_filters(points):
     check_window = 3
     thresh = 0.5
     while point_index<len(points)-1:
-        ### check error type 1: Noise point far too far away
-        if points[point_index][1]<0.47:
+        ### check error type 1: Noise point far too low
+        if points[point_index][1]<0.4:
             point_index += 1
             continue
         ### check error type 2: Noise point far too far away

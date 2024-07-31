@@ -65,7 +65,17 @@ class Experiment:
                 self.saved=False
                 # try:
                 thrower_name=command_list[1]
-                if len(self.robot_list) == 2:
+                if len(self.robot_list) == 1:
+                    robot=self.robot_list[0]
+                    robot.state = "throw"
+                    self.throw_h, distance=1.5,2
+                    desired_angle, desired_speed = cal_angle_speed(self.throw_h, distance + 0.5)
+
+                    arm_msg = robot.arm_throw_ball(desired_angle, desired_speed)
+                    # self.arm_msg=list(arm_msg.decode())
+                    self.saved_arm_input = [1, desired_angle, desired_speed]
+
+                elif len(self.robot_list) == 2:
                     robot1 = self.robot_list[0]
                     robot2 = self.robot_list[1]
                     # robot1.robot_self_pose = [0, 0, 0, 0]
@@ -77,7 +87,7 @@ class Experiment:
                             robot1.state = "throw"
                             robot2.state = "catch"
                             distance=math.sqrt((robot1.robot_self_pose[0]-robot2.robot_self_pose[0])**2+(robot1.robot_self_pose[1]-robot2.robot_self_pose[1])**2)
-                            desired_angle,desired_speed=cal_angle_speed(self.throw_h,distance+0.5)
+                            desired_angle,desired_speed=cal_angle_speed(self.throw_h,distance+1)
                             arm_msg=robot1.arm_throw_ball(desired_angle,desired_speed)
                             # self.arm_msg=list(arm_msg.decode())
                             self.saved_arm_input=[1,desired_angle,desired_speed]
@@ -87,7 +97,7 @@ class Experiment:
                             robot1.state = "catch"
                             distance = math.sqrt((robot1.robot_self_pose[0] - robot2.robot_self_pose[0]) ** 2 + (
                                         robot1.robot_self_pose[1] - robot2.robot_self_pose[1]) ** 2)
-                            desired_angle, desired_speed = cal_angle_speed(self.throw_h, distance+0.5)
+                            desired_angle, desired_speed = cal_angle_speed(self.throw_h, distance+1)
                             arm_msg=robot2.arm_throw_ball(desired_angle,desired_speed)
                             # print(arm_msg)
                             self.saved_arm_input=[2, desired_angle, desired_speed]
@@ -178,9 +188,9 @@ class Experiment:
         # print(position)
         if not position == None and self.throwing==True:
             x_world, y_world, z_world, theta_world = optitrack_coordinate_to_world_coordinates(position, rotation)
-            if z_world > 0.35 and x_world ** 2 + y_world ** 2 < 4:
-                present_time = time.time()
-                self.ball_memory.append([x_world, y_world, z_world, present_time])
+            if z_world > 0.4 and x_world ** 2 + y_world ** 2 < 4:
+                # present_time = time.time()
+                self.ball_memory.append([x_world, y_world, z_world])
                 is_parabola = check_parabola_point(self.ball_memory)
                 # print(is_parabola,len(self.ball_memory))
                 if not is_parabola and len(self.ball_memory) > self.check_parabola_window_size:
@@ -192,7 +202,6 @@ class Experiment:
 
             else:
                 if len(self.saved_ball_data) > 50 and self.saved == False:
-                    print(self.saved_ball_data)
                     files_and_dirs = os.listdir(
                         "saved_ball_data/")
                     # Filter out directories, keeping only files
@@ -209,18 +218,18 @@ class Experiment:
 if __name__ == "__main__":
     robot1_chassis_executor=RoboMasterExecutor(sn="3JKCH8800101C2")
     robot1_arm_executor = ArmExecutor(('192.168.0.105', 12345))
-    # robot2_chassis_executor = RoboMasterExecutor(sn="3JKCH7T00100M9")
-    # robot2_arm_executor = ArmExecutor(('192.168.0.104', 12345))
+    robot2_chassis_executor = RoboMasterExecutor(sn="3JKCH7T00100M9")
+    robot2_arm_executor = ArmExecutor(('192.168.0.104', 12345))
     # robot1_chassis_executor=None
     # robot1_arm_executor = None
     # robot2_chassis_executor = None
     # robot2_arm_executor=None
 
     robot1 = Robot('1', robot1_chassis_executor, robot1_arm_executor)
-    # robot2 = Robot('2', robot2_chassis_executor,robot2_arm_executor)
+    robot2 = Robot('2', robot2_chassis_executor,robot2_arm_executor)
     experiment=Experiment()
     experiment.robot_list.append(robot1)
-    # experiment.robot_list.append(robot2)
+    experiment.robot_list.append(robot2)
 
     optionsDict = {}
     optionsDict["clientAddress"] = "127.0.0.1"

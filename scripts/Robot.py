@@ -31,10 +31,11 @@ class Robot:
         landing_target_y = None
         if len(self.ball_memory) >= 20:
             if check_parabola_point(self.ball_memory) == True:
-                landing_target_x, landing_target_y, drop_t = landing_point_predictor_lstm(self.ball_memory,self.model, self.arm_pose[2])
+                landing_target_x, landing_target_y, drop_t = landing_point_predictor_lstm(self.ball_memory,self.model,self.robot_self_pose, self.arm_pose[2])
             # landing_target_x, landing_target_y, drop_t=0,0,1
             # landing_time = drop_t - (self.ball_memory[-1][3] - self.ball_memory[0][3])
-        if x_world ** 2 + y_world ** 2 < 2.25 and not landing_target_x == None and not landing_target_y == None:
+                print(landing_target_x,landing_target_y)
+        if x_world ** 2 + y_world ** 2 < 4 and not landing_target_x == None and not landing_target_y == None:
             landing_target_x = landing_target_x - math.cos(theta_world) * self.arm_pose[0]
             landing_target_y = landing_target_y - math.sin(theta_world) * self.arm_pose[0]
             vx, vy, omega = central_controller([x_world, y_world, z_world], theta_world,
