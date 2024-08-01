@@ -6,6 +6,7 @@ from squaternion import Quaternion
 from sklearn.linear_model import RANSACRegressor
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.pipeline import make_pipeline
+from scipy.spatial.transform import Rotation as R
 import plotly.graph_objects as go
 def calculate_rotation_angle(v1, v2):
     dot_product = np.dot(v1, v2)
@@ -148,3 +149,22 @@ def point_filters(points):
                 filtered_points.append(points[point_index])
         point_index+=1
     return np.array(filtered_points)
+def optitrack_coordinate_to_world_coordinates(position, rotation):
+    """
+    Converts a rigid body position or point position from optitrack coordinate to world coordinates
+    Args:
+        position: [x, y, z] x front, y up, z right
+        rotation: Quaternion (x, y, z, w)
+
+    Returns:
+        x, y, z, theta: x front, y left, z up, theta in radians from x-axis ccw
+    """
+    # Convert position: swap y and z and negate the new y to change from right to left
+    world_pos = np.array([position[0], -position[2], position[1]])
+    x, y, z, w = rotation
+    rotation = R.from_quat([x, y, z, w])
+    # Convert to Euler angles
+    euler_angles = rotation.as_euler('yzx', degrees=False)
+    # print(f"Euler angles: {euler_angles}")
+    beta = euler_angles[0]
+    return world_pos[0], world_pos[1], world_pos[2], beta

@@ -2,13 +2,11 @@ import math
 import sys
 from scripts.optitrack_sdk.NatNetClient import NatNetClient
 from scripts.robomaster_executor.robomaster_executor import RoboMasterExecutor
-from scripts.arm_control.throw import throw_a_ball
 from Robot import Robot
 from scripts.arm_control.arm_executor import ArmExecutor
-from scripts.chassis_control.chassis_controller import optitrack_coordinate_to_world_coordinates
+from scripts.utils import optitrack_coordinate_to_world_coordinates
 from scripts.data_process.check_parabola_point import check_parabola_point
 from threading import Thread
-from utils import calculate_rotation_angle
 import os
 import time
 import numpy as np
@@ -87,7 +85,7 @@ class Experiment:
                             robot1.state = "throw"
                             robot2.state = "catch"
                             distance=math.sqrt((robot1.robot_self_pose[0]-robot2.robot_self_pose[0])**2+(robot1.robot_self_pose[1]-robot2.robot_self_pose[1])**2)
-                            desired_angle,desired_speed=cal_angle_speed(self.throw_h,distance+1)
+                            desired_angle,desired_speed=cal_angle_speed(self.throw_h,1.8*distance)
                             arm_msg=robot1.arm_throw_ball(desired_angle,desired_speed)
                             # self.arm_msg=list(arm_msg.decode())
                             self.saved_arm_input=[1,desired_angle,desired_speed]
@@ -97,7 +95,7 @@ class Experiment:
                             robot1.state = "catch"
                             distance = math.sqrt((robot1.robot_self_pose[0] - robot2.robot_self_pose[0]) ** 2 + (
                                         robot1.robot_self_pose[1] - robot2.robot_self_pose[1]) ** 2)
-                            desired_angle, desired_speed = cal_angle_speed(self.throw_h, distance+1)
+                            desired_angle, desired_speed = cal_angle_speed(self.throw_h, 1.8*distance)
                             arm_msg=robot2.arm_throw_ball(desired_angle,desired_speed)
                             # print(arm_msg)
                             self.saved_arm_input=[2, desired_angle, desired_speed]

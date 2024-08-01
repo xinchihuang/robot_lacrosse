@@ -21,7 +21,7 @@ class  RoboMasterExecutor:
         ep_robot.initialize(conn_type="sta",sn=sn)
         self.ep_chassis = ep_robot.chassis
         self.max_speed=3.5
-        self.max_rotation_speed=10
+        self.max_rotation_speed=30
         self.contols_count=0
         self.sn=sn
 
@@ -30,7 +30,6 @@ class  RoboMasterExecutor:
         vx=controls[0]
         vy=controls[1]
         vz=math.degrees(controls[2])
-        # print(vx,vy,vz)
         if not vx==0:
             vx = min(abs(vx), self.max_speed) * abs(vx) / vx
         if not vy == 0:
@@ -41,11 +40,9 @@ class  RoboMasterExecutor:
 
         # self.ep_chassis.drive_speed(x=vx, y=-vy, z=-vz, timeout=0.02)
         # self.ep_chassis.drive_speed(x=0, y=0, z=0, timeout=5)
-        if not vx==0 or not vy==0 or not vz==0:
-            # print(vx,vy,vz,time.time())
-             pass
-        # print(self.sn,vx,vy,vz)
-        self.ep_chassis.drive_speed(x=vx, y=-vy, z=-vz, timeout=5)
+
+        print(self.sn,vx,vy,vz)
+        self.ep_chassis.drive_speed(x=vx, y=-vy, z=-vz, timeout=1)
         self.contols_count+=1
         # print(self.contols_count)
         # time.sleep(0.02)

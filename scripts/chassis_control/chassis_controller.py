@@ -398,7 +398,7 @@ def landing_point_predictor_lstm(ball_memory,model,self_pose, arm_hieght=0.3,che
         landing_x_parabola = x1
     else:
         landing_x_parabola = x2
-    print(x1,x2,x0,landing_x_parabola)
+    # print(x1,x2,x0,landing_x_parabola)
     landing_x_parabola_m = landing_x_parabola + residual.item()
     x_m, y_m = landing_x_parabola_m / math.sqrt(1 + m ** 2), landing_x_parabola_m * m / math.sqrt(
         1 + m ** 2)
