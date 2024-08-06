@@ -149,7 +149,7 @@ def point_filters(points):
                 filtered_points.append(points[point_index])
         point_index+=1
     return np.array(filtered_points)
-def optitrack_coordinate_to_world_coordinates(position, rotation):
+def optitrack_coordinate_to_world_coordinates(position, rotation,is_ball=False):
     """
     Converts a rigid body position or point position from optitrack coordinate to world coordinates
     Args:
@@ -160,7 +160,10 @@ def optitrack_coordinate_to_world_coordinates(position, rotation):
         x, y, z, theta: x front, y left, z up, theta in radians from x-axis ccw
     """
     # Convert position: swap y and z and negate the new y to change from right to left
+
     world_pos = np.array([position[0], -position[2], position[1]])
+    if is_ball == True:
+        return world_pos[0], world_pos[1], world_pos[2], 0
     x, y, z, w = rotation
     rotation = R.from_quat([x, y, z, w])
     # Convert to Euler angles

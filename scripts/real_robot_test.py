@@ -24,7 +24,7 @@ def my_parse_args(arg_list, args_dict):
                     args_dict["use_multicast"] = False
 
     return args_dict
-def cal_angle_speed(h,d,g=9.8,arm_length=0.28):
+def cal_angle_speed(h,d,g=9.8,arm_length=0.2):
     v_vertical=math.sqrt(2*g*h)
     t=math.sqrt(8*h/g)
     v_horizon=d/t
@@ -45,7 +45,8 @@ class Experiment:
 
         ##save_related
         self.saved=False
-        self.saved_ball_data=[]
+        self.saved_ball_data = []
+        self.saved_robot_data = []
         self.saved_arm_input=[]
         self.saved_arm_record=[]
 
@@ -85,9 +86,11 @@ class Experiment:
                             robot1.state = "throw"
                             robot2.state = "catch"
                             distance=math.sqrt((robot1.robot_self_pose[0]-robot2.robot_self_pose[0])**2+(robot1.robot_self_pose[1]-robot2.robot_self_pose[1])**2)
-                            desired_angle,desired_speed=cal_angle_speed(self.throw_h,1.8*distance)
+                            desired_angle,desired_speed=cal_angle_speed(self.throw_h,2*distance)
                             arm_msg=robot1.arm_throw_ball(desired_angle,desired_speed)
                             # self.arm_msg=list(arm_msg.decode())
+                            desired_speed = desired_speed + 10
+                            print(desired_speed)
                             self.saved_arm_input=[1,desired_angle,desired_speed]
 
                         elif "2" == str(thrower_name):
@@ -95,7 +98,8 @@ class Experiment:
                             robot1.state = "catch"
                             distance = math.sqrt((robot1.robot_self_pose[0] - robot2.robot_self_pose[0]) ** 2 + (
                                         robot1.robot_self_pose[1] - robot2.robot_self_pose[1]) ** 2)
-                            desired_angle, desired_speed = cal_angle_speed(self.throw_h, 1.8*distance)
+                            desired_angle, desired_speed = cal_angle_speed(self.throw_h, 2*distance)
+                            desired_speed=desired_speed+10
                             arm_msg=robot2.arm_throw_ball(desired_angle,desired_speed)
                             # print(arm_msg)
                             self.saved_arm_input=[2, desired_angle, desired_speed]
@@ -143,7 +147,7 @@ class Experiment:
                 x_world, y_world, z_world, theta_world = optitrack_coordinate_to_world_coordinates(position, rotation)
 
                 robot.robot_self_pose=[x_world, y_world, z_world, theta_world]
-
+                self.saved_robot_data.append([id,x_world, y_world, z_world])
                 if robot.state=="catch":
                     robot.ball_memory=self.ball_memory[10:self.check_point_window_size+10]
                     vx, vy, omega=robot.generate_cotrol(x_world, y_world, z_world, theta_world)
@@ -185,7 +189,7 @@ class Experiment:
 
         # print(position)
         if not position == None and self.throwing==True:
-            x_world, y_world, z_world, theta_world = optitrack_coordinate_to_world_coordinates(position, rotation)
+            x_world, y_world, z_world, theta_world = optitrack_coordinate_to_world_coordinates(position, rotation,is_ball=True)
             if z_world > 0.4 and x_world ** 2 + y_world ** 2 < 4:
                 # present_time = time.time()
                 self.ball_memory.append([x_world, y_world, z_world])
@@ -200,19 +204,27 @@ class Experiment:
 
             else:
                 if len(self.saved_ball_data) > 50 and self.saved == False:
-                    files_and_dirs = os.listdir(
-                        "saved_ball_data/")
-                    # Filter out directories, keeping only files
-                    files = [f for f in files_and_dirs if os.path.isfile(
-                        os.path.join("saved_ball_data/", f))]
-                    number = len(files)
-                    np.save("./saved_ball_data/" + str(
-                        number) + ".npy", np.array(self.saved_ball_data))
-                    np.save("./saved_arm_data/" + str(
-                        number) + ".npy", np.array(self.saved_arm_input))
-                    print("saved " + str(number))
-                    self.saved = True
+                   self.save_data()
                 self.ball_memory = []
+    def save_data(self):
+        files_and_dirs = os.listdir(
+            "saved_ball_data/")
+        # Filter out directories, keeping only files
+        files = [f for f in files_and_dirs if os.path.isfile(
+            os.path.join("saved_ball_data/", f))]
+        number = len(files)
+        np.save("./saved_ball_data/" + str(
+            number) + ".npy", np.array(self.saved_ball_data))
+        np.save("./saved_robot_data/" + str(
+            number) + ".npy", np.array(self.saved_robot_data))
+        np.save("./saved_arm_data/" + str(
+            number) + ".npy", np.array(self.saved_arm_input))
+        # np.save("./saved_arm_data/" + str(
+        #     number) + ".npy", np.array(self.saved_arm_input))
+        print("saved " + str(number))
+        self.saved_ball_data = []
+        self.saved_robot_data = []
+        self.saved = True
 if __name__ == "__main__":
     robot1_chassis_executor=RoboMasterExecutor(sn="3JKCH8800101C2")
     robot1_arm_executor = ArmExecutor(('192.168.0.105', 12345))
