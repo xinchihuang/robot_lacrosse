@@ -12,26 +12,26 @@ class Arm:
         self.bus = can.interface.Bus(interface="pcan", channel="PCAN_USBBUS1", bitrate=1000000)
         self.motor1 = CANMotorController(self.bus, motor_id=101, main_can_id=254)
         self.motor2 = CANMotorController(self.bus, motor_id=102, main_can_id=254)
-        self.motor3 = CANMotorController(self.bus, motor_id=103, main_can_id=254)
+        # self.motor3 = CANMotorController(self.bus, motor_id=103, main_can_id=254)
         self.motor1_angle = 0
         self.motor2_angle = 0
-        self.motor3_angle = 0
+        # self.motor3_angle = 0
     def enable_motors(self):
         """
         Enable motors, please direct arm to sky after it sound release it. Arm will lay down to initial position (link 2 lay down)
         """
         self.motor1.enable()
         self.motor2.enable()
-        self.motor3.enable()
+        # self.motor3.enable()
         self.motor1.set_0_pos()
         self.motor2.set_0_pos()
-        self.motor3.set_0_pos()
+        # self.motor3.set_0_pos()
         self.motor1.send_motor_control_command(torque=0,target_angle=self.motor1_angle, target_velocity=0,
                                                                    Kp=100, Kd=1)
         self.motor2.send_motor_control_command(torque=0, target_angle=self.motor2_angle, target_velocity=0,
                                                                    Kp=100, Kd=1)
-        self.motor3.send_motor_control_command(torque=0,target_angle=self.motor3_angle, target_velocity=0,
-                                                                   Kp=100, Kd=1)
+        # self.motor3.send_motor_control_command(torque=0,target_angle=self.motor3_angle, target_velocity=0,
+        #                                                            Kp=100, Kd=1)
         # warning to release arm
         for i in range(6):
             print("release arm motor, count down: " + str(5-i))
@@ -49,12 +49,12 @@ class Arm:
         # print("done")
         self.motor1_angle = 0
         self.motor2_angle = np.deg2rad(90)
-        self.motor3_angle = 0
+        # self.motor3_angle = 0
     def reset_ball(self):
         angle1 = self.motor1.enable()[1]
         angle2 = self.motor2.enable()[1]
         # print(self.motor2.enable()[3])
-        angle3 = self.motor3.enable()[1]
+        # angle3 = self.motor3.enable()[1]
 
         step = 150
         target1 = np.deg2rad(35)
@@ -68,7 +68,7 @@ class Arm:
 
         angle1 = self.motor1.enable()[1]
         angle2 = self.motor2.enable()[1]
-        angle3 = self.motor3.enable()[1]
+        # angle3 = self.motor3.enable()[1]
 
         step = 150
         target1 = np.deg2rad(-30)
@@ -82,7 +82,7 @@ class Arm:
 
         angle1 = self.motor1.enable()[1]
         angle2 = self.motor2.enable()[1]
-        angle3 = self.motor3.enable()[1]
+        # angle3 = self.motor3.enable()[1]
 
         step = 600
         target1 = np.deg2rad(0)
@@ -157,8 +157,18 @@ class Arm:
             target_speed = lower_speed
         elif target_speed> target_speed:
             target_speed=upper_speed
-
-
+	
+	# link2 lay down down
+        current_rad, current_speed = self.motor2.enable()[1:3]
+        step = 500
+        target = np.deg2rad(120)
+        step_length = (target - current_rad) / step
+        # print("to down down")
+        for i in range(step):
+            self.motor2.send_motor_control_command(torque=0, target_angle=current_rad + i * step_length,
+                                                   target_velocity=0,
+                                                   Kp=100, Kd=1)
+            time.sleep(0.001)
         # current_rad, current_speed = self.motor2.enable()[1:3]
         # print("Current angle: ", current_angle)
         # print("Current speed: ", current_speed)
@@ -191,7 +201,7 @@ class Arm:
     def stop(self):
         self.motor1.disable()
         self.motor2.disable()
-        self.motor3.disable()
+        # self.motor3.disable()
 
 
 
