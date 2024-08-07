@@ -45,5 +45,5 @@ class  RoboMasterExecutor:
         # print(self.contols_count)
         # time.sleep(0.02)
     def stop_robot(self):
-        self.ep_chassis.drive_speed(x=0, y=0, z=0, timeout=5)
+        self.ep_chassis.drive_speed(x=0, y=0, z=0, timeout=1)
         self.contols_count=0

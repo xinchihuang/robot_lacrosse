@@ -143,7 +143,6 @@ class Arm:
         Returns:
 
         """
-        start_time = time.time()
         record_list = []
         target_angle=90 - target_angle
         if target_angle < lower_angle:
@@ -172,6 +171,7 @@ class Arm:
         # current_rad, current_speed = self.motor2.enable()[1:3]
         # print("Current angle: ", current_angle)
         # print("Current speed: ", current_speed)
+        start_time = time.time()
         while True:
             # print("acceleration")
             current_rad, current_speed, current_tor = self.motor2.send_motor_control_command(torque=0, target_angle=target_rad,

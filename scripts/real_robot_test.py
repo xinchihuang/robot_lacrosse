@@ -63,7 +63,7 @@ class Experiment:
             if state == "throw":
                 self.saved=False
                 # try:
-                thrower_name=command_list[1]
+
                 if len(self.robot_list) == 1:
                     robot=self.robot_list[0]
                     robot.state = "throw"
@@ -71,10 +71,12 @@ class Experiment:
                     desired_angle, desired_speed = cal_angle_speed(self.throw_h, distance)
 
                     arm_msg = robot.arm_throw_ball(desired_angle, desired_speed)
-                    # self.arm_msg=list(arm_msg.decode())
+                    self.arm_msg=arm_msg.decode()
+                    print(self.arm_msg)
                     self.saved_arm_input = [1, desired_angle, desired_speed]
 
                 elif len(self.robot_list) == 2:
+                    thrower_name = command_list[1]
                     robot1 = self.robot_list[0]
                     robot2 = self.robot_list[1]
                     # robot1.robot_self_pose = [0, 0, 0, 0]
