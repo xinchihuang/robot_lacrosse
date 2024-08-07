@@ -72,7 +72,7 @@ class Experiment:
 
                     arm_msg = robot.arm_throw_ball(desired_angle, desired_speed)
                     self.arm_msg=arm_msg.decode()
-                    print(self.arm_msg)
+                    # print(self.arm_msg)
                     self.saved_arm_input = [1, desired_angle, desired_speed]
 
                 elif len(self.robot_list) == 2:
