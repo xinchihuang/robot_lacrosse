@@ -89,7 +89,7 @@ class Experiment:
                             desired_angle,desired_speed=cal_angle_speed(self.throw_h,distance)
                             arm_msg=robot1.arm_throw_ball(desired_angle,desired_speed)
                             print(desired_angle,desired_speed,distance)
-                            desired_speed = desired_speed-12
+                            desired_speed = desired_speed-10
                             self.saved_arm_input=[1,desired_angle,desired_speed]
 
                         elif "2" == str(thrower_name):
@@ -100,7 +100,7 @@ class Experiment:
 
                             desired_angle, desired_speed = cal_angle_speed(self.throw_h, distance)
                             print(desired_angle,desired_speed,distance)
-                            desired_speed = desired_speed-12
+                            desired_speed = desired_speed-10
 
                             arm_msg=robot2.arm_throw_ball(desired_angle,desired_speed)
                             # print(arm_msg)
@@ -196,10 +196,10 @@ class Experiment:
             if z_world > 0.4 and x_world ** 2 + y_world ** 2 < 4:
                 # present_time = time.time()
                 self.ball_memory.append([x_world, y_world, z_world])
-                is_parabola = check_parabola_point(self.ball_memory)
+                # is_parabola = check_parabola_point(self.ball_memory)
                 # print(is_parabola,len(self.ball_memory))
-                if not is_parabola and len(self.ball_memory) > self.check_parabola_window_size:
-                    self.ball_memory = []
+                # if not is_parabola and len(self.ball_memory) > self.check_parabola_window_size:
+                #     self.ball_memory = []
                 # print(z_world, len(self.ball_memory))
                 if self.saved == False:
                     self.saved_ball_data.append([x_world, y_world, z_world])
