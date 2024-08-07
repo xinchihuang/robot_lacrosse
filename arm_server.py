@@ -43,7 +43,6 @@ def start_server():
 
 
                 client_socket.sendall(arm_data_str.encode())  # Echoes back the received data
-
             client_socket.close()
         except Exception as e:
             print(f"An error occurred: {e}")
