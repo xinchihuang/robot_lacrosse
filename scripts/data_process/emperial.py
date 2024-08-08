@@ -8,6 +8,8 @@ import math
 from sklearn.linear_model import RANSACRegressor
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.pipeline import make_pipeline
+import plotly.express as px
+import pandas as pd
 
 files_and_dirs = os.listdir(
     "../saved_ball_data/")
@@ -123,6 +125,22 @@ fig.update_layout(title='RANSAC Parabola Fitting and Noise Detection',
                   legend_title='Legend',
                   width=800,
                   height=600)
-
+fig.show()
 # 显示图形
+# Create an index for the points
+index = np.arange(len(x))
+
+# Create a DataFrame for plotting
+data = {'x': x, 'y': y, 'z': z, 'index': index}
+df = pd.DataFrame(data)
+
+# Create a 3D scatter plot with color based on index
+fig = px.scatter_3d(df, x='x', y='y', z='z', color='index', color_continuous_scale=px.colors.sequential.Bluered)
+
+# Update the layout to maintain the 1:1:1 aspect ratio
+fig.update_layout(scene=dict(
+    aspectmode='manual',
+    aspectratio=dict(x=1, y=1, z=1)
+))
+
 fig.show()

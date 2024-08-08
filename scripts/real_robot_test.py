@@ -1,4 +1,5 @@
 import math
+import random
 import sys
 from scripts.optitrack_sdk.NatNetClient import NatNetClient
 from scripts.robomaster_executor.robomaster_executor import RoboMasterExecutor
@@ -67,11 +68,11 @@ class Experiment:
                 if len(self.robot_list) == 1:
                     robot=self.robot_list[0]
                     robot.state = "throw"
-                    self.throw_h, distance=1.5,2
+                    self.throw_h, distance=1.5,0.94
                     desired_angle, desired_speed = cal_angle_speed(self.throw_h, distance)
 
                     arm_msg = robot.arm_throw_ball(desired_angle, desired_speed)
-                    self.arm_msg=arm_msg.decode()
+                    # self.arm_msg=arm_msg.decode()
                     # print(self.arm_msg)
                     self.saved_arm_input = [1, desired_angle, desired_speed]
 
@@ -186,7 +187,7 @@ class Experiment:
         rotation = None
         z_world = None
         for marker_id in range(len(mocap_data.labeled_marker_data.labeled_marker_list)):
-            if mocap_data.labeled_marker_data.labeled_marker_list[marker_id].pos[1] > 0.25:
+            if mocap_data.labeled_marker_data.labeled_marker_list[marker_id].pos[1] > 0.2:
                 position = [mocap_data.labeled_marker_data.labeled_marker_list[marker_id].pos[0],
                             mocap_data.labeled_marker_data.labeled_marker_list[marker_id].pos[1],
                             mocap_data.labeled_marker_data.labeled_marker_list[marker_id].pos[2]]
@@ -195,7 +196,7 @@ class Experiment:
         # print(position)
         if not position == None and self.throwing==True:
             x_world, y_world, z_world, theta_world = optitrack_coordinate_to_world_coordinates(position, rotation,is_ball=True)
-            if z_world > 0.4 and x_world ** 2 + y_world ** 2 < 4:
+            if z_world > 0.4 and x_world ** 2 + y_world ** 2 < 2.25:
                 # present_time = time.time()
                 self.ball_memory.append([x_world, y_world, z_world])
                 # is_parabola = check_parabola_point(self.ball_memory)
