@@ -88,11 +88,11 @@ class Simulate:
                 self.pub2.publish(command_str)
                 self.pub3.publish(command_str)
                 time.sleep(1)
-            elif check_distance(robot1_position, ball_position) < 0.5:
+            elif check_distance(robot1_position, ball_position) < 0.45:
                 target_distance=check_distance(robot1_position, robot2_position)
                 target_v=math.sqrt(target_distance*10/2)/math.sin(math.radians(45))
                 target_w=target_v/0.11
-                time.sleep(1)
+                # time.sleep(1)
 
                 command = Command()
                 command.state = "rotate"
@@ -124,11 +124,11 @@ class Simulate:
                 command.state="catch"
                 command_str = command.encode()
                 self.pub2.publish(command_str)
-            elif check_distance(robot2_position, ball_position) < 0.5:
+            elif check_distance(robot2_position, ball_position) < 0.45:
                 target_distance = check_distance(robot1_position, robot2_position)
                 target_v = math.sqrt(target_distance*10/2)/math.sin(math.radians(45))
                 target_w = target_v / 0.11
-                time.sleep(1)
+                # time.sleep(1)
 
                 command = Command()
                 command.state = "rotate"

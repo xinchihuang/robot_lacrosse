@@ -32,17 +32,54 @@ def cal_angle_speed(h,d,g=9.8,arm_length=0.28):
     linear_speed=math.sqrt(v_horizon**2+v_vertical**2)
     angle=math.atan(v_horizon/v_vertical)
     return math.degrees(angle),linear_speed/arm_length
+def simple_moving_average(data, window_size=10):
+    sma = []
+    for i in range(len(data)):
+        if i+1 >= window_size:
+            sma.append(sum(data[i-window_size+1:i+1]) / window_size)
+        else:
+            sma.append(None)  # 表示这个位置还不能计算平均值
+    return sma
+def check_ball_memory_records(ball_memory,check_window=20):
+    """
+    Check whether to stop a recording session
+    Args:
+        ball_memory: record ball positions
+
+    Returns:  bool (whether to stop the recording session)
+
+    """
+    if len(ball_memory)<check_window:
+        return False
+    else:
+        sma=simple_moving_average(ball_memory)
+        previous=float("inf")
+        for i in range(len(sma)):
+            if sma[i] is None:
+                continue
+            else:
+                if sma[i]<previous:
+                    previous=sma[i]
+                else:
+                    return False
+        return True
+
 class Experiment:
     def __init__(self):
         self.ball_memory=[]
         self.robot_list=[]
-        self.throwing=False
+
         self.check_point_window_size=30
         self.check_parabola_window_size = 20
+
+
+        self.state="idle"
 
         ### throw_related
         self.throw_h=1.5
         self.g=9.8
+
+        self.throw_starts_time=time.time()
 
         ##save_related
         self.saved=False
@@ -62,12 +99,10 @@ class Experiment:
             command_list=command.split(",")
             state=command_list[0]
             if state == "throw":
-                self.saved=False
-                # try:
 
                 if len(self.robot_list) == 1:
                     robot=self.robot_list[0]
-                    robot.state = "throw"
+                    robot.robot_state = "throw"
                     self.throw_h, distance=1.5,0.94
                     desired_angle, desired_speed = cal_angle_speed(self.throw_h, distance)
 
@@ -78,63 +113,83 @@ class Experiment:
 
                 elif len(self.robot_list) == 2:
                     thrower_name = command_list[1]
-                    robot1 = self.robot_list[0]
-                    robot2 = self.robot_list[1]
-                    # robot1.robot_self_pose = [0, 0, 0, 0]
-                    # robot2.robot_self_pose = [2, 0, 0, 0]
-                    if not robot1.robot_self_pose is None and not robot2.robot_self_pose is None:
-                        # print(robot1.robot_name, robot1.robot_self_pose)
-                        # print( robot2.robot_name, robot2.robot_self_pose)
-                        if "1" == str(thrower_name):
-                            robot1.state = "throw"
-                            robot2.state = "catch"
-                            distance=math.sqrt((robot1.robot_self_pose[0]-robot2.robot_self_pose[0])**2+(robot1.robot_self_pose[1]-robot2.robot_self_pose[1])**2)
-                            desired_angle,desired_speed=cal_angle_speed(self.throw_h,distance)
-                            arm_msg=robot1.arm_throw_ball(desired_angle,desired_speed)
-                            print(desired_angle,desired_speed,distance)
-                            desired_speed = desired_speed-10
-                            self.saved_arm_input=[1,desired_angle,desired_speed]
-
-                        elif "2" == str(thrower_name):
-                            robot2.state = "throw"
-                            robot1.state = "catch"
-                            distance = math.sqrt((robot1.robot_self_pose[0] - robot2.robot_self_pose[0]) ** 2 + (
-                                        robot1.robot_self_pose[1] - robot2.robot_self_pose[1]) ** 2)
-
-                            desired_angle, desired_speed = cal_angle_speed(self.throw_h, distance)
-                            print(desired_angle,desired_speed,distance)
-                            desired_speed = desired_speed-10
-
-                            arm_msg=robot2.arm_throw_ball(desired_angle,desired_speed)
-                            # print(arm_msg)
-                            self.saved_arm_input=[2, desired_angle, desired_speed]
-                            # self.arm_msg=list(arm_msg.decode())
-                self.throwing=True
-                # files_and_dirs = os.listdir(
-                #     "saved_ball_data/")
-                # # Filter out directories, keeping only files
-                # files = [f for f in files_and_dirs if os.path.isfile(
-                #     os.path.join("saved_ball_data/", f))]
-                # number = len(files)
-                # np.save("./saved_arm_data/" + str(
-                #     number) + ".npy", np.array(self.saved_arm_input))
-                    # np.save("./saved_arm_record/" + str(
-                    #     number) + ".npy", np.array(self.saved_arm_record))
-                # except:
-                #     print("Invalid command")
-                #     continue
+                    catcher_name = command_list[2]
+                    for robot in self.robot_list:
+                        if thrower_name==robot.robot_name:
+                            robot.robot_state = "throw"
+                        if catcher_name==robot.catcher_name:
+                            robot.robot_state ="catcher"
+                self.state="throw"
+                self.throw_starts_time=time.time()
             elif state == "reset":
-                self.throwing = False
+                self.state="reset"
                 for robot in self.robot_list:
-                    robot.state = state
+                    robot.robot_state = state
                     robot.reset_arm()
             elif state == "rotate":
-                self.throwing=False
+                self.state="rotate"
                 for robot in self.robot_list:
-                    robot.state = state
+                    robot.robot_state = state
+    def move_arm(self):
+        while True:
+            if self.state == "throw":
+                if len(self.robot_list) == 1:
+                    robot=self.robot_list[0]
+                    if robot.state=="throw":
+                        self.throw_h, distance=1.5,0.94
+                        desired_angle, desired_speed = cal_angle_speed(self.throw_h, distance)
+                        arm_msg = robot.arm_throw_ball(desired_angle, desired_speed)
+                        # self.arm_msg=arm_msg.decode()
+                        # print(self.arm_msg)
+                        self.saved_arm_input = [1, desired_angle, desired_speed]
 
+                else:
+                    thrower=None
+                    catcher=None
+                    for robot in self.robot_list:
+                        if robot.state=="throw":
+                            thrower=robot
+                        elif robot.state=="catch":
+                            catcher=robot
+                    if not thrower is None and not catcher is None:
+                        distance = math.sqrt((thrower.robot_self_pose[0] - catcher.robot_self_pose[0]) ** 2 + (
+                                    thrower.robot_self_pose[1] - catcher.robot_self_pose[1]) ** 2)
+                        desired_angle, desired_speed = cal_angle_speed(self.throw_h, distance)
+                        arm_msg = thrower.arm_throw_ball(desired_angle, desired_speed)
+                        print(desired_angle, desired_speed, distance)
+                        desired_speed = desired_speed - 10
+                        self.saved_arm_input = [1, desired_angle, desired_speed]
+            elif self.state == "reset":
+                self.throwing = False
+                for robot in self.robot_list:
+                    robot.state = "reset"
+                    robot.reset_arm()
 
-    def process_optitrack_rigid_body_data(self, id, position, rotation):
+        pass
+    def move_robot(self):
+        while True:
+            if len(self.robot_list) == 2 and self.state=="rotate":
+                robot1 = self.robot_list[0]
+                robot2 = self.robot_list[1]
+                if not robot1.robot_self_pose is None and not robot2.robot_self_pose:
+                    if "1" == str(id):
+                        vx, vy, omega = robot1.get_rotate_control(robot2.robot_self_pose)
+                        robot1.execute(vx, vy, omega)
+                    elif "2" == str(id):
+                        vx, vy, omega = robot2.get_rotate_control(robot1.robot_self_pose)
+                        robot2.execute(vx, vy, omega)
+            elif self.state=="throw":
+                for robot in self.robot_list:
+                    if robot.robot_name == str(id):
+                        if robot.robot_state== "catch":
+                            vx, vy, omega = robot.get_move_cotrol(self.ball_memory[:self.check_point_window_size])
+                            # print(vx,vy,omega)
+                            robot.execute(vx, vy, omega)
+            elif self.state=="idle":
+                for robot in self.robot_list:
+                    robot.robot_state="idle"
+
+    def process_optitrack_rigid_body_data_old(self, id, position, rotation):
         """
 
         Args:
@@ -160,7 +215,7 @@ class Experiment:
                     # print(vx,vy,omega)
                     robot.execute(vx, vy, omega)
 
-        if len(self.robot_list) == 2 and self:
+        if len(self.robot_list) == 2:
             robot1 = self.robot_list[0]
             robot2 = self.robot_list[1]
             if not robot1.robot_self_pose is None and not robot2.robot_self_pose is None and robot1.state== "rotate" and  robot2.state== "rotate":
@@ -174,18 +229,39 @@ class Experiment:
                     vx, vy, omega=robot2.rotate(robot2.robot_self_pose, robot1.robot_self_pose)
                     robot2.execute(vx, vy, omega)
 
-    def process_optitrack_ball_data(self, mocap_data):
+    def process_optitrack_rigid_body_data(self, id, position, rotation):
+        """
+
+        Args:
+            id: rigid body id
+            position: rigid body position
+            rotation: rigid body rotation
+
+        Returns:
+
+        """
+        # print(position)
+        for robot in self.robot_list:
+            if robot.robot_name == str(id):
+                x_world, y_world, z_world, theta_world = optitrack_coordinate_to_world_coordinates(position, rotation)
+                robot.robot_self_pose = [x_world, y_world, z_world, theta_world]
+                if self.throwing == True:
+                    self.saved_robot_data.append([id, x_world, y_world, z_world])
+
+    def process_optitrack_ball_data_old(self, mocap_data):
         """
 
         Args:
             mocap_data: process ball data
 
-        Returns:
+        Returns: None
 
         """
         position = None
         rotation = None
         z_world = None
+
+        ### filter out point that too low
         for marker_id in range(len(mocap_data.labeled_marker_data.labeled_marker_list)):
             if mocap_data.labeled_marker_data.labeled_marker_list[marker_id].pos[1] > 0.2:
                 position = [mocap_data.labeled_marker_data.labeled_marker_list[marker_id].pos[0],
@@ -213,6 +289,43 @@ class Experiment:
                    self.save_data()
                 self.saved_robot_data=[]
                 self.ball_memory = []
+
+    def process_optitrack_ball_data(self, mocap_data):
+        """
+
+        Args:
+            mocap_data: process ball data
+
+        Returns: None
+
+        """
+        position = None
+        rotation = None
+        z_world = None
+        if self.state=="throw" and time.time()-self.throw_starts_time<3:
+            ### filter out point that too low
+            for marker_id in range(len(mocap_data.labeled_marker_data.labeled_marker_list)):
+                if mocap_data.labeled_marker_data.labeled_marker_list[marker_id].pos[1] > 0.2:
+                    position = [mocap_data.labeled_marker_data.labeled_marker_list[marker_id].pos[0],
+                                mocap_data.labeled_marker_data.labeled_marker_list[marker_id].pos[1],
+                                mocap_data.labeled_marker_data.labeled_marker_list[marker_id].pos[2]]
+                    rotation = [0, 0, 0, 0]
+            if not position == None:
+                x_world, y_world, z_world, theta_world = optitrack_coordinate_to_world_coordinates(position, rotation,                                                                                is_ball=True)
+                self.ball_memory.append([x_world, y_world, z_world])
+            else:
+                stop=check_ball_memory_records(self.ball_memory)
+                if stop==True:
+                    self.ball_memory = []
+                    self.state = "idle"
+                else:
+                    pass
+        else:
+            self.ball_memory = []
+            self.state = "idle"
+            pass
+
+
     def save_data(self):
         files_and_dirs = os.listdir(
             "saved_ball_data/")
@@ -267,8 +380,14 @@ if __name__ == "__main__":
     # Start up the streaming client now that the callbacks are set up.
     # This will run perpetually, and operate on a separate thread.
     is_running = streaming_client.run()
+
+
     command_thread = Thread(target=experiment.handle_command)
     command_thread.start()
+    move_robot_thread = Thread(target=experiment.move_robot)
+    move_robot_thread.start()
+    move_arm_thread = Thread(target=experiment.move_robot)
+    move_arm_thread.start()
 
 
 
