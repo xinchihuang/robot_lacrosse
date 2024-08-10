@@ -27,6 +27,7 @@ class LauncherExecutor:
 
     def launch(self,desired_angle,desired_speed):
         command = f"launch,{desired_angle},{desired_speed}"
+        print(command)
         self.client_socket.sendall(command.encode())
         # return_msg = self.client_socket.recv(10240)
         # return return_msg

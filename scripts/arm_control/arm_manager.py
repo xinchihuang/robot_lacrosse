@@ -249,7 +249,7 @@ class Launcher:
         :return: None
         '''
         self.motor1.set_0_pos()
-        self.motor1.enable()
+        # self.motor1.enable()
         target_angle = np.deg2rad(target_angle)
         start_time = time.time()
         current_angle = self.motor1.enable()[1]
@@ -283,7 +283,7 @@ class Launcher:
 
     def stop(self):
         self.motor1.disable()
-        self.motor2.disable()
+        # self.motor2.disable()
         # self.motor3.disable()
 
 # Convert the data to a DataFrame

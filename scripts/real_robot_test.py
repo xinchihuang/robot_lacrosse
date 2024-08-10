@@ -123,8 +123,7 @@ class Experiment:
                     robot.robot_state = state
             elif state == "launch":
                 self.state = "launch"
-                print(len(self.robot_list))
-                print(self.state)
+
                 if len(self.robot_list) == 1:
                     robot=self.robot_list[0]
                     robot.robot_state = "launch"
@@ -139,7 +138,6 @@ class Experiment:
 
     def move_arm(self):
         while True:
-
             if self.state == "throw":
                 if len(self.robot_list) == 1:
                     robot=self.robot_list[0]
@@ -167,7 +165,10 @@ class Experiment:
                         print(desired_angle, desired_speed, distance)
                         desired_speed = desired_speed - 10
                         self.saved_arm_input = [1, desired_angle, desired_speed]
+                self.state="idle"
             elif self.state=="launch":
+                print(len(self.robot_list))
+                print(self.state)
                 # print(self.state)
                 thrower = None
                 for robot in self.robot_list:
@@ -181,6 +182,7 @@ class Experiment:
                     print(desired_angle,desired_speed)
                     arm_msg = thrower.launcher_throw_ball(desired_angle, desired_speed)
                     self.saved_arm_input = [1, desired_angle, desired_speed]
+                self.state = "idle"
 
 
 
@@ -189,6 +191,8 @@ class Experiment:
                 for robot in self.robot_list:
                     robot.robot_state = "reset"
                     robot.reset_arm()
+                self.state = "idle"
+
 
         pass
     def move_robot(self):

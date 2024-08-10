@@ -20,13 +20,13 @@ def start_server():
                 data_list = data.decode().split(",")
                 mode = data_list[0]
                 print(data_list)
-                try:
-                    if mode == 'launch':
-                        target_angle = float(data_list[1])
-                        target_speed = float(data_list[2])
-                        launcher_data = launcher.move_at_acceleration(target_angle=target_angle, target_velocity=target_speed)
-                except:
-                    print("Invalid")
+                # try:
+                if mode == 'launch':
+                    target_angle = float(data_list[1])
+                    target_speed = float(data_list[2])
+                    launcher_data = launcher.move_at_acceleration(target_angle=target_angle, target_velocity=target_speed)
+                # except:
+                #     print("Invalid")
 
             client_socket.close()
         except Exception as e:
