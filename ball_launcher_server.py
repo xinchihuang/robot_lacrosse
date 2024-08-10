@@ -21,7 +21,7 @@ def start_server():
                 mode = data_list[0]
                 print(mode)
                 try:
-                    if mode == 'throw':
+                    if mode == 'launch':
                         target_angle = float(data_list[1])
                         target_speed = float(data_list[2])
                         launcher_data = launcher.move_at_acceleration(target_angle=target_angle, target_velocity=target_speed)
