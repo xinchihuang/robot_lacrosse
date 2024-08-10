@@ -8,6 +8,7 @@ from scripts.arm_control.pcan_cybergear import CANMotorController
 
 class Arm:
     def __init__(self):
+        self.bus = can.interface.Bus(interface="pcan", channel="PCAN_USBBUS1", bitrate=1000000)
         self.motor1 = CANMotorController(self.bus, motor_id=101, main_can_id=254)
         self.motor2 = CANMotorController(self.bus, motor_id=102, main_can_id=254)
         # self.motor3 = CANMotorController(self.bus, motor_id=103, main_can_id=254)
@@ -91,42 +92,6 @@ class Arm:
             time.sleep(0.001)
 
 
-    def throw_to_angle_with_torque(self, brake_angle=np.deg2rad(45), torque=-12):
-        start_time = time.time()
-        record_list = []
-        brake_angle = np.deg2rad(brake_angle)
-        torque = torque
-        current_angle, current_speed = self.motor2.enable()[1:3]
-        # print("Current angle: ", current_angle)
-        # print("Current speed: ", current_speed)
-        while current_angle > brake_angle:
-            # print("acceleration")
-            current_angle, current_speed = self.motor2.send_motor_control_command(torque=torque, target_angle=0,
-                                                                                  target_velocity=0,
-                                                                                  Kp=0, Kd=0)[1:3]
-            time_elapsed = time.time() - start_time
-            record_list.append([time_elapsed, current_angle, current_speed,0])
-        while current_speed < -0.3:
-            # print("deceleration")
-            current_angle, current_speed = self.motor2.send_motor_control_command(torque=0, target_angle=0,
-                                                                                  target_velocity=0,
-                                                                                  Kp=0, Kd=5)[1:3]
-            time_elapsed = time.time() - start_time
-            record_list.append([time_elapsed, current_angle, current_speed,1])
-        step = 500
-        target = 0
-        step_length = (target - current_angle) / step
-        # print("to 0")
-        for i in range(step):
-            self.motor2.send_motor_control_command(torque=0, target_angle=current_angle + i * step_length,
-                                                   target_velocity=0,
-                                                   Kp=100, Kd=1)
-            time.sleep(0.001)
-        # print("done")
-        self.motor2_angle = 0
-        return record_list
-    time.sleep(1)
-
     def throw_to_angle_with_speed(self, target_angle=45, target_speed=20,lower_angle=0,upper_angle=90,lower_speed=-30,upper_speed=0):
         """
 
@@ -196,39 +161,6 @@ class Arm:
         # print("done")
         self.motor2_angle = np.deg2rad(90)
         return record_list
-    def move_at_acceleration(self,target_angle, target_velocity):
-        '''
-        :param target_angle: rad
-        :param target_velocity: rad/s
-        :return: None
-        '''
-        target_angle = np.deg2rad(target_angle)
-        start_time = time.time()
-        current_angle = self.motor1.enable()[1]
-        acceleration = target_velocity**2 / (2 * (target_angle - current_angle))
-        print(f'acceleration: {acceleration}')
-        time_to_accelerate = target_velocity / acceleration
-        print(f'time_to_accelerate: {time_to_accelerate}')
-        total_time = time_to_accelerate*2
-        print(f'total_time: {total_time}')
-        while time.time() - start_time < time_to_accelerate:
-            current_time = time.time() - start_time
-            # record_time.append(current_time)
-            current_velocity = acceleration * current_time
-            current_angle = current_velocity * current_time / 2
-            angle,speed=self.motor1.send_motor_control_command(torque=0, target_angle=current_angle, target_velocity=current_velocity, Kp=100, Kd=1)[1:3]
-            # record_angle.append(angle)
-            # record_velocity.append(speed)
-            time.sleep(0.001)
-        while time.time() - start_time < total_time:
-            current_time = time.time() - start_time
-            # record_time.append(current_time)
-            current_velocity = target_velocity - acceleration * (current_time - time_to_accelerate)
-            current_angle = target_angle + target_velocity * (current_time - time_to_accelerate) - acceleration * (current_time - time_to_accelerate)**2 / 2
-            angle,speed=self.motor1.send_motor_control_command(torque=0, target_angle=current_angle, target_velocity=current_velocity, Kp=100, Kd=1)[1:3]
-            # record_angle.append(angle)
-            # record_velocity.append(speed)
-            time.sleep(0.001)
     def stop(self):
         self.motor1.disable()
         self.motor2.disable()
