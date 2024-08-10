@@ -245,7 +245,7 @@ class Experiment:
             if robot.robot_name == str(id):
                 x_world, y_world, z_world, theta_world = optitrack_coordinate_to_world_coordinates(position, rotation)
                 robot.robot_self_pose = [x_world, y_world, z_world, theta_world]
-                if self.throwing == True:
+                if self.state == "throw":
                     self.saved_robot_data.append([id, x_world, y_world, z_world])
 
     def process_optitrack_ball_data_old(self, mocap_data):
@@ -346,19 +346,21 @@ class Experiment:
         self.saved_robot_data = []
         self.saved = True
 if __name__ == "__main__":
-    robot1_chassis_executor=RoboMasterExecutor(sn="3JKCH8800101C2")
-    robot1_arm_executor = ArmExecutor(('192.168.0.105', 12345))
+    # robot1_chassis_executor=RoboMasterExecutor(sn="3JKCH8800101C2")
+    # robot1_arm_executor = ArmExecutor(('192.168.0.105', 12345))
     robot2_chassis_executor = RoboMasterExecutor(sn="3JKCH7T00100M9")
     robot2_arm_executor = ArmExecutor(('192.168.0.104', 12345))
+    # ball_launcher = None
+    # ball_launcher_arm_executor = ArmExecutor(('192.168.0.104', 12345))
     # robot1_chassis_executor=None
     # robot1_arm_executor = None
     # robot2_chassis_executor = None
     # robot2_arm_executor=None
 
-    robot1 = Robot('1', robot1_chassis_executor, robot1_arm_executor)
+    # robot1 = Robot('1', robot1_chassis_executor, robot1_arm_executor)
     robot2 = Robot('2', robot2_chassis_executor,robot2_arm_executor)
     experiment=Experiment()
-    experiment.robot_list.append(robot1)
+    # experiment.robot_list.append(robot1)
     experiment.robot_list.append(robot2)
 
     optionsDict = {}
