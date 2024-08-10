@@ -135,6 +135,21 @@ class Experiment:
                             robot.robot_state = "launch"
                         if catcher_name==robot.name:
                             robot.robot_state ="catch"
+            elif state == "catch":
+                if len(self.robot_list) == 1:
+                    robot=self.robot_list[0]
+                    robot.robot_state = "catch"
+                # elif len(self.robot_list) == 2:
+                #     thrower_name = command_list[1]
+                #     catcher_name = command_list[2]
+                #     for robot in self.robot_list:
+                #         if thrower_name==robot.name:
+                #             robot.robot_state = "throw"
+                #         if catcher_name==robot.name:
+                #             robot.robot_state ="catch"
+                self.state="catch"
+                self.throw_starts_time=time.time()
+
 
     def move_arm(self):
         while True:
@@ -208,6 +223,13 @@ class Experiment:
                         vx, vy, omega = robot2.get_rotate_control(robot1.robot_self_pose)
                         robot2.execute(vx, vy, omega)
             elif self.state=="throw":
+                for robot in self.robot_list:
+                    if robot.name == str(id):
+                        if robot.robot_state== "catch":
+                            vx, vy, omega = robot.get_move_cotrol(self.ball_memory[:self.check_point_window_size])
+                            # print(vx,vy,omega)
+                            robot.execute(vx, vy, omega)
+            elif self.state=="catch":
                 for robot in self.robot_list:
                     if robot.name == str(id):
                         if robot.robot_state== "catch":
