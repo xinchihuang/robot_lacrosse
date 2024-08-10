@@ -2,8 +2,7 @@ import math
 import time
 import can
 import numpy as np
-import plotly.express as px
-import pandas as pd
+
 from scripts.arm_control.pcan_cybergear import CANMotorController
 
 
