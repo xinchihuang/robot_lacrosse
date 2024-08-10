@@ -7,8 +7,8 @@ from scripts.lstm_scratch import DynamicLSTM
 import torch
 from utils import calculate_rotation_angle
 class Robot:
-    def __init__(self, robot_name,chassis_executor=None,arm_executor=None):
-        self.robot_name=robot_name
+    def __init__(self, name,chassis_executor=None,arm_executor=None):
+        self.name=name
         self.chassis_executor=chassis_executor
         self.arm_executor = arm_executor
         self.model = DynamicLSTM(input_dim=2, hidden_dim=20, output_dim=1,
@@ -59,9 +59,27 @@ class Robot:
         arm_msg=self.arm_executor.throw(desired_angle,desired_speed)
         return arm_msg
             # self.executor.stop_robot()
+    def launcher_throw_ball(self,desired_angle,desired_speed):
+        arm_msg=self.arm_executor.launch(desired_angle,desired_speed)
+        return arm_msg
+            # self.executor.stop_robot()
     def reset_arm(self):
         self.arm_executor.reset()
 
+class Launcher:
+    def __init__(self, name,chassis_executor=None,arm_executor=None):
+        self.name=name
+        self.chassis_executor=chassis_executor
+        self.arm_executor = arm_executor
+
+    def execute(self,vx, vy, omega):
+        self.chassis_executor.execute([vx, vy, omega])
+    def launcher_throw_ball(self,desired_angle,desired_speed):
+        arm_msg=self.arm_executor.launch(desired_angle,desired_speed)
+        return arm_msg
+            # self.executor.stop_robot()
+    def reset_arm(self):
+        self.arm_executor.reset()
 
 
 

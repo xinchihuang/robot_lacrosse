@@ -19,7 +19,7 @@ def start_server():
                     break
                 data_list = data.decode().split(",")
                 mode = data_list[0]
-                print(mode)
+                print(data_list)
                 try:
                     if mode == 'launch':
                         target_angle = float(data_list[1])
