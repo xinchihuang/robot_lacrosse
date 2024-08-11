@@ -54,11 +54,11 @@ class Robot:
     #
     def arm_throw_ball(self,desired_angle,desired_speed):
         arm_msg=self.arm_executor.throw(desired_angle,desired_speed)
-        return arm_msg
+        # return arm_msg
             # self.executor.stop_robot()
     def launcher_throw_ball(self,desired_angle,desired_speed):
-        arm_msg=self.arm_executor.launch(desired_angle,desired_speed)
-        return arm_msg
+        self.arm_executor.launch(desired_angle,desired_speed)
+        # return arm_msg
             # self.executor.stop_robot()
     def reset_arm(self):
         self.arm_executor.reset()

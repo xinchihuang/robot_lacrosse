@@ -11,9 +11,6 @@ class ArmExecutor:
     def throw(self,desired_angle,desired_speed):
         command = f"throw,{desired_angle},{desired_speed}"
         self.client_socket.sendall(command.encode())
-        # return_msg = self.client_socket.recv(10240)
-        # return return_msg
-        return None
     def reset(self):
         command = f"reset"
         self.client_socket.sendall(command.encode())
@@ -29,9 +26,6 @@ class LauncherExecutor:
         command = f"launch,{desired_angle},{desired_speed}"
         print(command)
         self.client_socket.sendall(command.encode())
-        # return_msg = self.client_socket.recv(10240)
-        # return return_msg
-        return None
     def reset(self):
         command = f"reset"
         self.client_socket.sendall(command.encode())

@@ -120,7 +120,7 @@ class Arm:
         elif target_speed> target_speed:
             target_speed=upper_speed
 	
-	# link2 lay down down
+	    # link2 lay down down
         current_rad, current_speed = self.motor2.enable()[1:3]
         step = 500
         target = np.deg2rad(120)

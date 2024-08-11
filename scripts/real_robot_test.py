@@ -159,7 +159,7 @@ class Experiment:
                     if robot.robot_state=="throw":
                         self.throw_h, distance=1.5,0.94
                         desired_angle, desired_speed = cal_angle_speed(self.throw_h, distance)
-                        arm_msg = robot.arm_throw_ball(desired_angle, desired_speed)
+                        robot.arm_throw_ball(desired_angle, desired_speed)
                         # self.arm_msg=arm_msg.decode()
                         # print(self.arm_msg)
                         self.saved_arm_input = [1, desired_angle, desired_speed]
@@ -176,7 +176,7 @@ class Experiment:
                         distance = math.sqrt((thrower.robot_self_pose[0] - catcher.robot_self_pose[0]) ** 2 + (
                                     thrower.robot_self_pose[1] - catcher.robot_self_pose[1]) ** 2)
                         desired_angle, desired_speed = cal_angle_speed(self.throw_h, distance)
-                        arm_msg = thrower.arm_throw_ball(desired_angle, desired_speed)
+                        thrower.arm_throw_ball(desired_angle, desired_speed)
                         print(desired_angle, desired_speed, distance)
                         desired_speed = desired_speed - 10
                         self.saved_arm_input = [1, desired_angle, desired_speed]
@@ -195,7 +195,7 @@ class Experiment:
                     self.throw_h, distance = 1.5, 0.94
                     desired_angle, desired_speed = cal_angle_speed(self.throw_h, distance,arm_length=0.3)
                     print(desired_angle,desired_speed)
-                    arm_msg = thrower.launcher_throw_ball(desired_angle, desired_speed)
+                    thrower.launcher_throw_ball(desired_angle, desired_speed)
                     self.saved_arm_input = [1, desired_angle, desired_speed]
                 self.state = "idle"
 
@@ -208,8 +208,6 @@ class Experiment:
                     robot.reset_arm()
                 self.state = "idle"
 
-
-        pass
     def move_robot(self):
         while True:
             if len(self.robot_list) == 2 and self.state=="rotate":

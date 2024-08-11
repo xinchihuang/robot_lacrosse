@@ -21,7 +21,7 @@ def start_server():
                     break
                 data_list = data.decode().split(",")
                 mode = data_list[0]
-                arm_data_str = ''
+                # arm_data_str = ''
                 print(mode)
                 try:
                     if mode == 'throw':
@@ -42,7 +42,7 @@ def start_server():
                     print(f"Index error: {ie}")
 
 
-                client_socket.sendall(arm_data_str.encode())  # Echoes back the received data
+                # client_socket.sendall(arm_data_str.encode())  # Echoes back the received data
             client_socket.close()
         except Exception as e:
             print(f"An error occurred: {e}")
