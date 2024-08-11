@@ -125,7 +125,7 @@ def distance_time_controller_local(self_position,target,t,max_speed=1.5):
     vx = (distance_x/t)/abs(distance_x/t)*max(abs(distance_x/t),max_speed)
     vy = (distance_y/t)/abs(distance_y/t)*max(abs(distance_y/t),max_speed)
     return [vx,vy]
-def central_controller(self_position,self_rotation,target_position,target_rotation=0,max_speed=3.5,decrease_range=0.5):
+def central_controller(self_position,self_rotation,target_position,target_rotation=0,max_speed=3.5,decrease_range=0.2):
     """
     Central controller function for chassis, try to maximize the speed before reach the decrease range
     Args:
@@ -152,7 +152,7 @@ def central_controller(self_position,self_rotation,target_position,target_rotati
 
     omega = target_rotation - self_rotation
     vx_local,vy_local,omega_local = global_control_to_local_control(self_rotation,[vx,vy,omega])
-    return vx_local, vy_local, omega_local
+    return vx_local, vy_local, 0
 
 def landing_point_predictor_old(ball_memory,arm_hieght=0.3):
     g_x=0
@@ -369,13 +369,14 @@ def landing_point_predictor_ransac2(ball_memory, arm_hieght=0.3):
         1 + m ** 2)
     return x, y+intercept, 1
 def landing_point_predictor_lstm(ball_memory,model,self_pose, arm_hieght=0.3,check_point=30):
-    # print(ball_memory)
+    # print(len(ball_memory))
     ball_memory=np.array(ball_memory)
     ball_memory_to_fit = ball_memory[:check_point]
     m, intercept, inlier_mask = fit_line(ball_memory_to_fit)
+    # print(m, intercept)
     new_points_to_fit = world_to_parabola_coordinate(ball_memory_to_fit, m, intercept)
     new_points_to_fit = point_filters(new_points_to_fit)
-
+    # print(len(new_points_to_fit))
     sequence_length = torch.tensor([len(new_points_to_fit)])
     # print(torch.tensor([new_points_to_fit]))
     # print("get_input")
@@ -386,10 +387,12 @@ def landing_point_predictor_lstm(ball_memory,model,self_pose, arm_hieght=0.3,che
     # plot_parabola(ball_memory)
     # plot_parabola(new_points)
     a, b, c = fit_parabola(new_points_to_fit)
-    x1, x2 = root(a, b, c - 0.3)
+    # print(a,b,c)
+    # print(self_pose_parabola_plane)
+    x1, x2 = root(a, b, c - arm_hieght)
 
     if x1 == None or x2 == None:
-        return self_pose_parabola_plane[0], self_pose_parabola_plane[1],1
+        return self_pose_parabola_plane[0][0], self_pose_parabola_plane[0][1],1
     x0 = self_pose_parabola_plane[0][0]
 
     d1 = (x1 - x0) ** 2

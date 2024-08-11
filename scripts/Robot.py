@@ -25,22 +25,19 @@ class Robot:
         self.parabola_state=False
         self.robot_self_pose=None
     def get_move_control(self,ball_memory):
-        landing_target_x = None
-        landing_target_y = None
+
+        if len(ball_memory)<30:
+            return 0,0,0
+        # landing_target_x = None
+        # landing_target_y = None
         x_world, y_world, z_world, theta_world=self.robot_self_pose[0],self.robot_self_pose[1],self.robot_self_pose[2],self.robot_self_pose[3]
-        if len(ball_memory) >= 20:
-            if check_parabola_point(ball_memory) == True:
-                landing_target_x, landing_target_y, drop_t = landing_point_predictor_lstm(ball_memory,self.model,self.robot_self_pose, self.arm_pose[2])
-            # landing_target_x, landing_target_y, drop_t=0,0,1
-            # landing_time = drop_t - (self.ball_memory[-1][3] - self.ball_memory[0][3])
-                print(landing_target_x,landing_target_y)
-        if x_world ** 2 + y_world ** 2 < 4 and not landing_target_x == None and not landing_target_y == None:
-            landing_target_x = landing_target_x - math.cos(theta_world) * self.arm_pose[0]
-            landing_target_y = landing_target_y - math.sin(theta_world) * self.arm_pose[0]
-            vx, vy, omega = central_controller([x_world, y_world, z_world], theta_world,
-                                               [landing_target_x, landing_target_y, z_world], 0)
-        else:
-            vx, vy, omega = 0, 0, 0
+        landing_target_x, landing_target_y, drop_t = landing_point_predictor_lstm(ball_memory,self.model,self.robot_self_pose, self.arm_pose[2])
+        landing_target_x = landing_target_x - math.cos(theta_world) * self.arm_pose[0]
+        landing_target_y = landing_target_y - math.sin(theta_world) * self.arm_pose[0]
+        print(landing_target_x,landing_target_y)
+        vx, vy, omega = central_controller([x_world, y_world, z_world], theta_world,
+                                           [landing_target_x, landing_target_y, z_world], 0)
+
         return vx, vy, omega
     def get_rotate_control(self,direction_pose):
         target_direction = [direction_pose[0] - self.robot_self_pose[0],
@@ -48,12 +45,12 @@ class Robot:
         self_direction = [math.cos(self.robot_self_pose[3]), math.sin(self.robot_self_pose[3])]
 
         d_theta = calculate_rotation_angle(self_direction, target_direction)
-        # print(target_direction, self_direction,d_theta)
-        # omega=math.degrees(d_theta)
-        # print(d_theta)
         return 0,0,d_theta
     def execute(self,vx, vy, omega):
-        self.chassis_executor.execute([vx, vy, omega])
+        if self.robot_state=="idle":
+            self.chassis_executor.execute([0,0,0])
+        else:
+            self.chassis_executor.execute([vx, vy, omega])
     #
     def arm_throw_ball(self,desired_angle,desired_speed):
         arm_msg=self.arm_executor.throw(desired_angle,desired_speed)
