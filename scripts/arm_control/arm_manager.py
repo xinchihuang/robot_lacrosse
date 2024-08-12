@@ -123,7 +123,7 @@ class Arm:
 	    # link2 lay down down
         current_rad, current_speed = self.motor2.enable()[1:3]
         step = 500
-        target = np.deg2rad(120)
+        target = np.deg2rad(91)
         step_length = (target - current_rad) / step
         # print("to down down")
         for i in range(step):
@@ -134,6 +134,7 @@ class Arm:
         # current_rad, current_speed = self.motor2.enable()[1:3]
         # print("Current angle: ", current_angle)
         # print("Current speed: ", current_speed)
+	time.sleep(0.1)
         start_time = time.time()
         while True:
             # print("acceleration")
