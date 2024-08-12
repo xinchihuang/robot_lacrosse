@@ -8,6 +8,21 @@ from sklearn.preprocessing import PolynomialFeatures
 from sklearn.pipeline import make_pipeline
 from scipy.spatial.transform import Rotation as R
 import plotly.graph_objects as go
+def my_parse_args(arg_list, args_dict):
+    # set up base values
+    arg_list_len=len(arg_list)
+    if arg_list_len>1:
+        args_dict["serverAddress"] = arg_list[1]
+        if arg_list_len>2:
+            args_dict["clientAddress"] = arg_list[2]
+        if arg_list_len>3:
+            if len(arg_list[3]):
+                args_dict["use_multicast"] = True
+                if arg_list[3][0].upper() == "U":
+                    args_dict["use_multicast"] = False
+
+    return args_dict
+
 def calculate_rotation_angle(v1, v2):
     dot_product = np.dot(v1, v2)
     norm_v1 = np.linalg.norm(v1)
@@ -171,3 +186,10 @@ def optitrack_coordinate_to_world_coordinates(position, rotation,is_ball=False):
     # print(f"Euler angles: {euler_angles}")
     beta = euler_angles[0]
     return world_pos[0], world_pos[1], world_pos[2], beta
+def cal_angle_speed(h,d,g=9.8,arm_length=0.28):
+    v_vertical=math.sqrt(2*g*h)
+    t=math.sqrt(8*h/g)
+    v_horizon=d/t
+    linear_speed=math.sqrt(v_horizon**2+v_vertical**2)
+    angle=math.atan(v_horizon/v_vertical)
+    return math.degrees(angle),linear_speed/arm_length

@@ -6,9 +6,10 @@ from torch.utils.data import Dataset, DataLoader
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
+from utils import *
 # Load CSV file
 data_path = 'diuqiubiao.csv'
-data = pd.read_csv(data_path,encoding='utf-16')
+data = pd.read_csv(data_path,encoding='utf-8')
 # Display the first few rows of the dataframe
 
 
@@ -21,6 +22,12 @@ train_features = data.iloc[:40, 3:].values
 train_labels = data.iloc[:40, 1:3].values
 eval_features = data.iloc[40:, 3:].values
 eval_labels = data.iloc[40:, 1:3].values
+for i in range(len(train_features)):
+    h, d=train_features[i][0], train_features[i][1]
+    angle,speed=cal_angle_speed(h,d)
+    angle_l,speed_l=train_labels[i][0],train_labels[i][1]
+    print(angle,speed,angle_l,speed_l)
+
 
 def linear_mapping(data, old_min, old_max, new_min, new_max):
     # 计算系数 a 和 b
@@ -30,9 +37,9 @@ def linear_mapping(data, old_min, old_max, new_min, new_max):
     # 应用线性映射
     new_data = a * data + b
     return new_data
-
-train_mapped_x_labels = linear_mapping(train_labels[:, 0], -12.0, -10.0,0, 1.0)
-train_mapped_y_labels = linear_mapping(train_labels[:, 1],55, 65, 0, 1.0)
+min_angle,max_angle,min_vel,max_vel = 4,9,18,20
+train_mapped_x_labels = linear_mapping(train_labels[:, 0],min_angle,max_angle,0, 1.0)
+train_mapped_y_labels = linear_mapping(train_labels[:, 1],min_vel,max_vel, 0, 1.0)
 train_mapped_labels = np.column_stack((train_mapped_x_labels, train_mapped_y_labels))
 
 class SimpleDataset(Dataset):
@@ -69,11 +76,11 @@ hidden_dim=20
 output_dim=2
 # Create the model
 model = SimpleMLP(input_dim, hidden_dim, output_dim)
-optimizer = optim.Adam(model.parameters(), lr=0.001)
+optimizer = optim.Adam(model.parameters(), lr=0.01)
 
 # 训练模型
 model.train()
-for epoch in range(50):  # 训练 5 个 epoch
+for epoch in range(100):  # 训练 5 个 epoch
     for sequences, labels in dataloader:
         optimizer.zero_grad()
         output = model(sequences)
@@ -84,19 +91,19 @@ for epoch in range(50):  # 训练 5 个 epoch
         print(f"Epoch {epoch}, Loss: {loss.item()}")
 path = "save_model_throw.pth"
 
-eval_mapped_x_labels = linear_mapping(eval_labels[:, 0], -12.0, -10.0,0, 1.0)
-eval_mapped_y_labels = linear_mapping(eval_labels[:, 1],55, 65, 0, 1.0)
+eval_mapped_x_labels = linear_mapping(eval_labels[:, 0], min_angle,max_angle,0, 1.0)
+eval_mapped_y_labels = linear_mapping(eval_labels[:, 1],min_vel,max_vel, 0, 1.0)
 eval_mapped_labels = np.column_stack((eval_mapped_x_labels, eval_mapped_y_labels))
 eval_set=SimpleDataset(eval_features, eval_mapped_labels)
 eval_dataloader = DataLoader(eval_set, batch_size=1, shuffle=True)
 for feature, labels in eval_dataloader:
         optimizer.zero_grad()
         output = model(feature)
-        output_x_labels = linear_mapping(output.squeeze().detach().numpy()[0], 0, 1.0,-12.0, -10.0,)
-        output_y_labels = linear_mapping(output.squeeze().detach().numpy()[1],  0, 1.0,55, 65)
+        output_x_labels = linear_mapping(output.squeeze().detach().numpy()[0], 0, 1.0,min_angle,max_angle)
+        output_y_labels = linear_mapping(output.squeeze().detach().numpy()[1],  0, 1.0,min_vel,max_vel)
         output_labels = np.column_stack((output_x_labels, output_y_labels))
-        x_labels = linear_mapping(labels.float()[:, 0], 0, 1.0, -12.0, -10.0, )
-        y_labels = linear_mapping(labels.float()[:, 1], 0, 1.0, 55, 65)
+        x_labels = linear_mapping(labels.float()[:, 0], 0, 1.0, min_angle,max_angle)
+        y_labels = linear_mapping(labels.float()[:, 1], 0, 1.0, min_vel, max_vel)
         labels = np.column_stack((x_labels, y_labels))
         print(f"out put {output_labels}, Labl: {labels }")
 model.eval()

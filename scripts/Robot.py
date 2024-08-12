@@ -24,19 +24,21 @@ class Robot:
         self.robot_state=None
         self.parabola_state=False
         self.robot_self_pose=None
+
     def get_move_control(self,ball_memory):
 
         if len(ball_memory)<30:
             return 0,0,0
         # landing_target_x = None
         # landing_target_y = None
-        x_world, y_world, z_world, theta_world=self.robot_self_pose[0],self.robot_self_pose[1],self.robot_self_pose[2],self.robot_self_pose[3]
+        # x_world, y_world, z_world, theta_world=self.robot_self_pose[0],self.robot_self_pose[1],self.robot_self_pose[2],self.robot_self_pose[3]
+        theta_world = self.robot_self_pose[3]
         landing_target_x, landing_target_y, drop_t = landing_point_predictor_lstm(ball_memory,self.model,self.robot_self_pose, self.arm_pose[2])
         landing_target_x = landing_target_x - math.cos(theta_world) * self.arm_pose[0]
         landing_target_y = landing_target_y - math.sin(theta_world) * self.arm_pose[0]
-        print(landing_target_x,landing_target_y)
-        vx, vy, omega = central_controller([x_world, y_world, z_world], theta_world,
-                                           [landing_target_x, landing_target_y, z_world], 0)
+        # print(landing_target_x,landing_target_y,self.robot_self_pose)
+        vx, vy, omega = central_controller(self.robot_self_pose[:3], theta_world,
+                                           [landing_target_x, landing_target_y], 0)
 
         return vx, vy, omega
     def get_rotate_control(self,direction_pose):

@@ -11,6 +11,7 @@ from threading import Thread
 import os
 import time
 import numpy as np
+from utils import *
 def my_parse_args(arg_list, args_dict):
     # set up base values
     arg_list_len=len(arg_list)
@@ -25,13 +26,7 @@ def my_parse_args(arg_list, args_dict):
                     args_dict["use_multicast"] = False
 
     return args_dict
-def cal_angle_speed(h,d,g=9.8,arm_length=0.28):
-    v_vertical=math.sqrt(2*g*h)
-    t=math.sqrt(8*h/g)
-    v_horizon=d/t
-    linear_speed=math.sqrt(v_horizon**2+v_vertical**2)
-    angle=math.atan(v_horizon/v_vertical)
-    return math.degrees(angle),linear_speed/arm_length
+
 def simple_moving_average(data, window_size=10):
     sma = []
     for i in range(len(data)):
@@ -157,7 +152,7 @@ class Experiment:
                 if len(self.robot_list) == 1:
                     robot=self.robot_list[0]
                     if robot.robot_state=="throw":
-                        self.throw_h, distance=1.5,0.94
+                        self.throw_h, distance=1.5,0.5
                         desired_angle, desired_speed = cal_angle_speed(self.throw_h, distance)
                         robot.arm_throw_ball(desired_angle, desired_speed)
                         # self.arm_msg=arm_msg.decode()
@@ -232,8 +227,8 @@ class Experiment:
                     if robot.robot_state== "catch":
                         vx, vy, omega = robot.get_move_control(self.ball_memory[:self.check_point_window_size])
                         # print(robot.robot_self_pose,vx,vy,omega)
-                        print(vx,vy,omega)
-                        print(time.time()-self.throw_starts_time)
+                        # print(vx,vy,omega)
+                        # print(time.time()-self.throw_starts_time)
                         robot.execute(vx, vy, omega)
             elif self.state=="launch":
                 pass
@@ -275,34 +270,41 @@ class Experiment:
         """
         position = None
         rotation = None
-        if (self.state=="throw" or self.state=="launch" or self.state=="catch") and time.time()-self.throw_starts_time<3:
-            # print(self.state)
-            ### filter out point that too low
-            # print(len(mocap_data.labeled_marker_data.labeled_marker_list))
-            for marker_id in range(len(mocap_data.labeled_marker_data.labeled_marker_list)):
-                if mocap_data.labeled_marker_data.labeled_marker_list[marker_id].pos[1] > 0.4:
-                    position = [mocap_data.labeled_marker_data.labeled_marker_list[marker_id].pos[0],
-                                mocap_data.labeled_marker_data.labeled_marker_list[marker_id].pos[1],
-                                mocap_data.labeled_marker_data.labeled_marker_list[marker_id].pos[2]]
-                    rotation = [0, 0, 0, 0]
+        if time.time()-self.throw_starts_time<3:
+            if self.state=="throw" or self.state=="launch" or self.state=="catch":
+                # print(self.state)
+                ### filter out point that too low
+                # print(len(mocap_data.labeled_marker_data.labeled_marker_list))
+                for marker_id in range(len(mocap_data.labeled_marker_data.labeled_marker_list)):
+                    if mocap_data.labeled_marker_data.labeled_marker_list[marker_id].pos[1] > 0.4:
+                        position = [mocap_data.labeled_marker_data.labeled_marker_list[marker_id].pos[0],
+                                    mocap_data.labeled_marker_data.labeled_marker_list[marker_id].pos[1],
+                                    mocap_data.labeled_marker_data.labeled_marker_list[marker_id].pos[2]]
+                        rotation = [0, 0, 0, 0]
 
-            if not position == None:
-                x_world, y_world, z_world, theta_world = optitrack_coordinate_to_world_coordinates(position, rotation,is_ball=True)
-                # print(time.time()-self.throw_starts_time)
-                # print([x_world, y_world, z_world])
-                self.ball_memory.append([x_world, y_world, z_world])
-            else:
-
-                stop=check_ball_memory_records(self.ball_memory)
-                # print(position,stop)
-                if stop==True:
-                    print("stop")
-                    self.saved_ball_data = self.ball_memory
-                    self.save_data()
-                    self.ball_memory = []
-                    self.state = "idle"
+                if not position == None:
+                    x_world, y_world, z_world, theta_world = optitrack_coordinate_to_world_coordinates(position, rotation,is_ball=True)
+                    # print(time.time()-self.throw_starts_time)
+                    # print([x_world, y_world, z_world])
+                    self.ball_memory.append([x_world, y_world, z_world])
                 else:
-                    pass
+
+                    stop=check_ball_memory_records(self.ball_memory)
+                    # print(position,stop)
+                    if stop==True:
+                        print("stop")
+                        self.saved_ball_data = self.ball_memory
+                        self.save_data()
+                        self.ball_memory = []
+                        self.state = "idle"
+                    else:
+                        pass
+            else:
+                self.saved_ball_data = self.ball_memory
+                if len(self.saved_ball_data) > 30:
+                    self.save_data()
+                self.state = "idle"
+                self.ball_memory = []
         else:
             self.saved_ball_data=self.ball_memory
             if len(self.saved_ball_data)>30:

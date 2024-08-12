@@ -125,7 +125,7 @@ def distance_time_controller_local(self_position,target,t,max_speed=1.5):
     vx = (distance_x/t)/abs(distance_x/t)*max(abs(distance_x/t),max_speed)
     vy = (distance_y/t)/abs(distance_y/t)*max(abs(distance_y/t),max_speed)
     return [vx,vy]
-def central_controller(self_position,self_rotation,target_position,target_rotation=0,max_speed=3.5,decrease_range=0.2):
+def central_controller(self_position,self_rotation,target_position,target_rotation=0,max_speed=3.5,decrease_range=0.5):
     """
     Central controller function for chassis, try to maximize the speed before reach the decrease range
     Args:
@@ -147,11 +147,9 @@ def central_controller(self_position,self_rotation,target_position,target_rotati
         vx = max_speed * dx / math.sqrt(dx ** 2 + dy ** 2)
         vy = max_speed * dy / math.sqrt(dx ** 2 + dy ** 2)
     else:
-        vx = max_speed * dx
-        vy = max_speed * dy
-
-    omega = target_rotation - self_rotation
-    vx_local,vy_local,omega_local = global_control_to_local_control(self_rotation,[vx,vy,omega])
+        vx = dx
+        vy = dy
+    vx_local,vy_local,omega_local = global_control_to_local_control(self_rotation,[vx,vy,0])
     return vx_local, vy_local, 0
 
 def landing_point_predictor_old(ball_memory,arm_hieght=0.3):
@@ -392,7 +390,7 @@ def landing_point_predictor_lstm(ball_memory,model,self_pose, arm_hieght=0.3,che
     x1, x2 = root(a, b, c - arm_hieght)
 
     if x1 == None or x2 == None:
-        return self_pose_parabola_plane[0][0], self_pose_parabola_plane[0][1],1
+        return self_pose[0],self_pose[1],1
     x0 = self_pose_parabola_plane[0][0]
 
     d1 = (x1 - x0) ** 2
@@ -403,6 +401,7 @@ def landing_point_predictor_lstm(ball_memory,model,self_pose, arm_hieght=0.3,che
         landing_x_parabola = x2
     # print(x1,x2,x0,landing_x_parabola)
     landing_x_parabola_m = landing_x_parabola + residual.item()
+    # landing_x_parabola_m = landing_x_parabola
     x_m, y_m = landing_x_parabola_m / math.sqrt(1 + m ** 2), landing_x_parabola_m * m / math.sqrt(
         1 + m ** 2)
     return x_m,y_m+intercept,1

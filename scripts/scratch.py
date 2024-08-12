@@ -1,5 +1,8 @@
 import numpy as np
-print(np.load("/home/xinchi/catkin_ws/src/robot_lacrosse/scripts/saved_arm_data/20.npy"))
+from utils import *
+print(np.load("./saved_data/saved_arm_data/20.npy"))
+h,d=1.538684277,0.5
+print(cal_angle_speed(h,d))
 # import time
 # s=time.time()
 # time.sleep(1)
