@@ -134,7 +134,7 @@ class Arm:
         # current_rad, current_speed = self.motor2.enable()[1:3]
         # print("Current angle: ", current_angle)
         # print("Current speed: ", current_speed)
-	time.sleep(0.1)
+        time.sleep(0.1)
         start_time = time.time()
         while True:
             # print("acceleration")
