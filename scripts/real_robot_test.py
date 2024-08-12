@@ -93,7 +93,10 @@ class Experiment:
             command=input("Press enter command: ")
             command_list=command.split(",")
             state=command_list[0]
-            if state == "throw":
+            if state == "1":
+                command_list=["throw","2","1"]
+            ### throw case
+            if state == "throw" or state=="1":
                 if len(self.robot_list) == 1:
                     robot=self.robot_list[0]
                     robot.robot_state = "throw"
@@ -106,54 +109,13 @@ class Experiment:
                         if catcher_name==robot.name:
                             robot.robot_state ="catch"
                 self.state="throw"
-                self.throw_starts_time=time.time()
-            elif state == "reset":
-                self.state="reset"
-                for robot in self.robot_list:
-                    robot.robot_state = state
-                    robot.reset_arm()
-            elif state == "rotate":
-                self.state="rotate"
-                for robot in self.robot_list:
-                    robot.robot_state = state
-            elif state == "launch":
-                self.state = "launch"
-
-                if len(self.robot_list) == 1:
-                    robot=self.robot_list[0]
-                    robot.robot_state = "launch"
-                elif len(self.robot_list) == 2:
-                    thrower_name = command_list[1]
-                    catcher_name = command_list[2]
-                    for robot in self.robot_list:
-                        if thrower_name==robot.name:
-                            robot.robot_state = "launch"
-                        if catcher_name==robot.name:
-                            robot.robot_state ="catch"
-            elif state == "catch":
-                # if len(self.robot_list) == 1:
-                robot=self.robot_list[0]
-                robot.robot_state = "catch"
-                # elif len(self.robot_list) == 2:
-                #     thrower_name = command_list[1]
-                #     catcher_name = command_list[2]
-                #     for robot in self.robot_list:
-                #         if thrower_name==robot.name:
-                #             robot.robot_state = "throw"
-                #         if catcher_name==robot.name:
-                #             robot.robot_state ="catch"
-                self.state="catch"
-                self.throw_starts_time=time.time()
-
-
-    def move_arm(self):
-        while True:
-            if self.state == "throw":
                 if len(self.robot_list) == 1:
                     robot=self.robot_list[0]
                     if robot.robot_state=="throw":
-                        self.throw_h, distance=1.5,0.5
+                        self.throw_h, distance=1.5,2
                         desired_angle, desired_speed = cal_angle_speed(self.throw_h, distance)
+                        desired_angle=30
+                        desired_speed=30
                         robot.arm_throw_ball(desired_angle, desired_speed)
                         # self.arm_msg=arm_msg.decode()
                         # print(self.arm_msg)
@@ -171,72 +133,64 @@ class Experiment:
                         distance = math.sqrt((thrower.robot_self_pose[0] - catcher.robot_self_pose[0]) ** 2 + (
                                     thrower.robot_self_pose[1] - catcher.robot_self_pose[1]) ** 2)
                         desired_angle, desired_speed = cal_angle_speed(self.throw_h, distance)
+                        desired_angle = 30
+                        desired_speed = 30
                         thrower.arm_throw_ball(desired_angle, desired_speed)
-                        print(desired_angle, desired_speed, distance)
-                        desired_speed = desired_speed - 10
+                        # print(desired_angle, desired_speed, distance)
+                        # desired_speed = desired_speed
                         self.saved_arm_input = [1, desired_angle, desired_speed]
-                self.state="idle"
-            elif self.state=="launch":
-                print(len(self.robot_list))
-                print(self.state)
-                # print(self.state)
-                thrower = None
+                self.throw_starts_time=time.time()
+            ### reset case
+            elif state == "reset":
+                self.state="reset"
                 for robot in self.robot_list:
-                    # print(robot.robot_state)
-                    # print("AAAA")
-                    if robot.robot_state == "launch":
-                        thrower = robot
-                if not thrower is None :
-                    self.throw_h, distance = 1.5, 0.94
-                    desired_angle, desired_speed = cal_angle_speed(self.throw_h, distance,arm_length=0.3)
-                    print(desired_angle,desired_speed)
-                    thrower.launcher_throw_ball(desired_angle, desired_speed)
-                    self.saved_arm_input = [1, desired_angle, desired_speed]
-                self.state = "idle"
-
-
-
-            elif self.state == "reset":
-                self.throwing = False
-                for robot in self.robot_list:
-                    robot.robot_state = "reset"
+                    robot.robot_state = state
                     robot.reset_arm()
-                self.state = "idle"
 
-    def move_robot(self):
-        while True:
-            if len(self.robot_list) == 2 and self.state=="rotate":
-                robot1 = self.robot_list[0]
-                robot2 = self.robot_list[1]
-                if not robot1.robot_self_pose is None and not robot2.robot_self_pose:
-                    vx, vy, omega = robot1.get_rotate_control(robot2.robot_self_pose)
-                    robot1.execute(vx, vy, omega)
-                    vx, vy, omega = robot2.get_rotate_control(robot1.robot_self_pose)
-                    robot2.execute(vx, vy, omega)
-            elif self.state=="throw":
-                for robot in self.robot_list:
+                if self.state == "reset":
+                    self.throwing = False
+                    for robot in self.robot_list:
+                        robot.robot_state = "reset"
+                        robot.reset_arm()
+                    self.state = "idle"
+            ### launch case
+            # elif state == "launch":
+            #     if len(self.robot_list) == 1:
+            #         robot=self.robot_list[0]
+            #         robot.robot_state = "launch"
+                # elif len(self.robot_list) == 2:
+                #     thrower_name = command_list[1]
+                #     catcher_name = command_list[2]
+                #     for robot in self.robot_list:
+                #         if thrower_name==robot.name:
+                #             robot.robot_state = "launch"
+                #         if catcher_name==robot.name:
+                #             robot.robot_state ="catch"
+                # # print(self.state)
+                # thrower = None
+                # for robot in self.robot_list:
+                #     # print(robot.robot_state)
+                #     # print("AAAA")
+                #     if robot.robot_state == "launch":
+                #         thrower = robot
+                # if not thrower is None:
+                #     self.throw_h, distance = 1.5, 5
+                #     desired_angle, desired_speed = cal_angle_speed(self.throw_h, distance, arm_length=0.3)
+                #
+                #     thrower.launcher_throw_ball(desired_angle, desired_speed)
+                #     self.saved_arm_input = [1, desired_angle, desired_speed]
+                # self.throw_starts_time = time.time()
 
-                    if robot.robot_state== "catch":
-                        vx, vy, omega = robot.get_move_control(self.ball_memory[:self.check_point_window_size])
-                        # print(vx,vy,omega)
-                        robot.execute(vx, vy, omega)
-            elif self.state=="catch":
-                # print(self.state)
+            elif state == "catch":
+                # if len(self.robot_list) == 1:
+                robot=self.robot_list[0]
+                robot.robot_state = "catch"
+                self.state="catch"
+                self.throw_starts_time=time.time()
+            elif state == "rotate":
+                self.state="rotate"
                 for robot in self.robot_list:
-                    # print(robot.robot_state)
-                    if robot.robot_state== "catch":
-                        vx, vy, omega = robot.get_move_control(self.ball_memory[:self.check_point_window_size])
-                        # print(robot.robot_self_pose,vx,vy,omega)
-                        # print(vx,vy,omega)
-                        # print(time.time()-self.throw_starts_time)
-                        robot.execute(vx, vy, omega)
-            elif self.state=="launch":
-                pass
-            elif self.state=="idle":
-                for robot in self.robot_list:
-                    robot.robot_state="idle"
-                    robot.execute(0,0, 0)
-
+                    robot.robot_state = state
 
 
     def process_optitrack_rigid_body_data(self, id, position, rotation):
@@ -257,7 +211,37 @@ class Experiment:
                 robot.robot_self_pose = [x_world, y_world, z_world, theta_world]
                 # if self.state == "throw" or self.state =="catch" or self.state=="launch":
                 #     self.saved_robot_data.append([id, x_world, y_world, z_world])
-
+        if len(self.robot_list) == 2 and self.state == "rotate":
+            robot1 = self.robot_list[0]
+            robot2 = self.robot_list[1]
+            if not robot1.robot_self_pose is None and not robot2.robot_self_pose:
+                vx, vy, omega = robot1.get_rotate_control(robot2.robot_self_pose)
+                robot1.execute(vx, vy, omega)
+                vx, vy, omega = robot2.get_rotate_control(robot1.robot_self_pose)
+                robot2.execute(vx, vy, omega)
+        elif self.state == "throw":
+            for robot in self.robot_list:
+                if robot.robot_state == "catch":
+                    vx, vy, omega = robot.get_move_control(self.ball_memory[:self.check_point_window_size])
+                    print(robot.name,vx,vy,omega)
+                    robot.execute(vx, vy, omega)
+        elif self.state == "catch":
+            # print(self.state)
+            for robot in self.robot_list:
+                # print(robot.robot_state)
+                if robot.robot_state == "catch":
+                    vx, vy, omega = robot.get_move_control(self.ball_memory[:self.check_point_window_size])
+                    self.saved_robot_data.append([robot.name].extend(robot.robot_self_pose))
+                    # print(robot.robot_self_pose,vx,vy,omega)
+                    # print(vx,vy,omega)
+                    # print(time.time()-self.throw_starts_time)
+                    robot.execute(vx, vy, omega)
+        elif self.state == "launch":
+            pass
+        elif self.state == "idle":
+            for robot in self.robot_list:
+                robot.robot_state = "idle"
+                robot.execute(0, 0, 0)
 
     def process_optitrack_ball_data(self, mocap_data):
         """
@@ -276,7 +260,9 @@ class Experiment:
                 ### filter out point that too low
                 # print(len(mocap_data.labeled_marker_data.labeled_marker_list))
                 for marker_id in range(len(mocap_data.labeled_marker_data.labeled_marker_list)):
+
                     if mocap_data.labeled_marker_data.labeled_marker_list[marker_id].pos[1] > 0.4:
+                        # print(len(mocap_data.labeled_marker_data.labeled_marker_list))
                         position = [mocap_data.labeled_marker_data.labeled_marker_list[marker_id].pos[0],
                                     mocap_data.labeled_marker_data.labeled_marker_list[marker_id].pos[1],
                                     mocap_data.labeled_marker_data.labeled_marker_list[marker_id].pos[2]]
@@ -284,8 +270,7 @@ class Experiment:
 
                 if not position == None:
                     x_world, y_world, z_world, theta_world = optitrack_coordinate_to_world_coordinates(position, rotation,is_ball=True)
-                    # print(time.time()-self.throw_starts_time)
-                    # print([x_world, y_world, z_world])
+                    # print(len(self.ball_memory))
                     self.ball_memory.append([x_world, y_world, z_world])
                 else:
 
@@ -296,6 +281,7 @@ class Experiment:
                         self.saved_ball_data = self.ball_memory
                         self.save_data()
                         self.ball_memory = []
+                        self.saved_robot_data = []
                         self.state = "idle"
                     else:
                         pass
@@ -305,12 +291,14 @@ class Experiment:
                     self.save_data()
                 self.state = "idle"
                 self.ball_memory = []
+                self.saved_robot_data = []
         else:
             self.saved_ball_data=self.ball_memory
             if len(self.saved_ball_data)>30:
                 self.save_data()
             self.state = "idle"
             self.ball_memory = []
+            self.saved_robot_data = []
 
 
 
@@ -323,10 +311,10 @@ class Experiment:
         number = len(files)
         np.save("./saved_ball_data/" + str(
             number) + ".npy", np.array(self.saved_ball_data))
-        # np.save("./saved_robot_data/" + str(
-        #     number) + ".npy", np.array(self.saved_robot_data))
-        # np.save("./saved_arm_data/" + str(
-        #     number) + ".npy", np.array(self.saved_arm_input))
+        np.save("./saved_robot_data/" + str(
+            number) + ".npy", np.array(self.saved_robot_data))
+        np.save("./saved_arm_data/" + str(
+            number) + ".npy", np.array(self.saved_arm_input))
         # np.save("./saved_arm_data/" + str(
         #     number) + ".npy", np.array(self.saved_arm_input))
         print("saved " + str(number))
@@ -336,8 +324,8 @@ class Experiment:
 if __name__ == "__main__":
     # ball_launcher_chassis_executor = None
     # ball_launcher_arm_executor = LauncherExecutor(('192.168.0.106', 12345))
-    # robot1_chassis_executor=RoboMasterExecutor(sn="3JKCH8800101C2")
-    # robot1_arm_executor = ArmExecutor(('192.168.0.105', 12345))
+    robot1_chassis_executor=RoboMasterExecutor(sn="3JKCH8800101C2")
+    robot1_arm_executor = ArmExecutor(('192.168.0.105', 12345))
     robot2_chassis_executor = RoboMasterExecutor(sn="3JKCH7T00100M9")
     robot2_arm_executor = ArmExecutor(('192.168.0.104', 12345))
 
@@ -348,11 +336,11 @@ if __name__ == "__main__":
 
 
     # launcher = Launcher('0', ball_launcher_chassis_executor, ball_launcher_arm_executor)
-    # robot1 = Robot('1', robot1_chassis_executor, robot1_arm_executor)
-    robot2 = Robot('2', robot2_chassis_executor,robot2_arm_executor)
+    robot1 = Robot('1', robot1_chassis_executor, robot1_arm_executor)
+    robot2 = Robot('2', robot2_chassis_executor, robot2_arm_executor)
     experiment=Experiment()
     # experiment.robot_list.append(launcher)
-    # experiment.robot_list.append(robot1)
+    experiment.robot_list.append(robot1)
     experiment.robot_list.append(robot2)
 
     optionsDict = {}
@@ -378,10 +366,9 @@ if __name__ == "__main__":
 
     command_thread = Thread(target=experiment.handle_command)
     command_thread.start()
-    move_robot_thread = Thread(target=experiment.move_robot)
-    move_robot_thread.start()
-    # move_arm_thread = Thread(target=experiment.move_arm)
-    # move_arm_thread.start()
+    # move_robot_thread = Thread(target=experiment.move_robot)
+    # move_robot_thread.start()
+
 
 
 
