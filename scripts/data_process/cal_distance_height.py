@@ -6,12 +6,14 @@ import plotly.graph_objects as go
 from scipy.optimize import minimize
 from sympy import symbols, Eq, solve
 
-for i in range(90, 91):
+for i in range(30, 45):
     if os.path.isfile(f'../saved_ball_data/{i}.npy'):
 
         # 加载数据
-        torque=np.load(f'../saved_arm_data/{i}.npy')[-1][0]
-        brake_angle=np.load(f'../saved_arm_data/{i}.npy')[-2][0]
+
+        arm_data=np.load(f'../saved_arm_data/{i}.npy')
+        desired_angle=arm_data[1]
+        desired_speed=arm_data[2]
         data = np.load(f'../saved_ball_data/{i}.npy')
 
 
@@ -124,4 +126,4 @@ for i in range(90, 91):
         distance =abs(np.sqrt(g**2 + 1)*(x1 - x2))
         # print(f"两个根的距离是：{distance}")
 
-        print(f"{i}\t{torque}\t{brake_angle}\t{optimal_z}\t{distance}")
+        print(f"{i}\t{desired_angle}\t{desired_speed}\t{optimal_z}\t{distance}")

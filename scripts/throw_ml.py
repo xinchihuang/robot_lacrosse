@@ -7,8 +7,8 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 # Load CSV file
-data_path = 'throw_data.csv'
-data = pd.read_csv(data_path)
+data_path = 'diuqiubiao.csv'
+data = pd.read_csv(data_path,encoding='utf-16')
 # Display the first few rows of the dataframe
 
 
@@ -16,11 +16,11 @@ data = pd.read_csv(data_path)
 
 # Assume the last column is the label
 
-train_features = data.iloc[:70, 3:].values
+train_features = data.iloc[:40, 3:].values
 
-train_labels = data.iloc[:70, 1:3].values
-eval_features = data.iloc[70:, 3:].values
-eval_labels = data.iloc[70:, 1:3].values
+train_labels = data.iloc[:40, 1:3].values
+eval_features = data.iloc[40:, 3:].values
+eval_labels = data.iloc[40:, 1:3].values
 
 def linear_mapping(data, old_min, old_max, new_min, new_max):
     # 计算系数 a 和 b
