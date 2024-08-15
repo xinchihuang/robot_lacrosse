@@ -7,7 +7,6 @@ from sklearn.pipeline import make_pipeline
 import plotly.graph_objects as go
 from scripts.utils import *
 # from scipy.optimize import least_squares,fsolve
-from scripts.lstm_scratch import DynamicLSTM
 from scipy.spatial.transform import Rotation as R
 import torch
 import math
@@ -371,22 +370,12 @@ def landing_point_predictor_lstm(ball_memory,model,self_pose, arm_hieght=0.3,che
     ball_memory=np.array(ball_memory)
     ball_memory_to_fit = ball_memory[:check_point]
     m, intercept, inlier_mask = fit_line(ball_memory_to_fit)
-    # print(m, intercept)
     new_points_to_fit = world_to_parabola_coordinate(ball_memory_to_fit, m, intercept)
     new_points_to_fit = point_filters(new_points_to_fit)
-    # print(len(new_points_to_fit))
     sequence_length = torch.tensor([len(new_points_to_fit)])
-    # print(torch.tensor([new_points_to_fit]))
-    # print("get_input")
     residual = model(torch.tensor(new_points_to_fit).float().unsqueeze(0), sequence_length)
-    # print(self_pose,m,intercept)
     self_pose_parabola_plane=world_to_parabola_coordinate([self_pose[:3]], m, intercept)
-    # print(self_pose_parabola_plane)
-    # plot_parabola(ball_memory)
-    # plot_parabola(new_points)
     a, b, c = fit_parabola(new_points_to_fit)
-    # print(a,b,c)
-    # print(self_pose_parabola_plane)
     x1, x2 = root(a, b, c - arm_hieght)
 
     if x1 == None or x2 == None:
@@ -405,3 +394,4 @@ def landing_point_predictor_lstm(ball_memory,model,self_pose, arm_hieght=0.3,che
     x_m, y_m = landing_x_parabola_m / math.sqrt(1 + m ** 2), landing_x_parabola_m * m / math.sqrt(
         1 + m ** 2)
     return x_m,y_m+intercept,1
+

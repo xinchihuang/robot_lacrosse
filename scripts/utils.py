@@ -113,12 +113,14 @@ def fit_parabola(ball_memory):
     return a, b, c
 
 def world_to_parabola_coordinate(ball_memory, m, b):
+
     new_coordinate = []
     for point in ball_memory:
-        if (point[1] - b) * m > 0:
-            new_coordinate.append([math.sqrt((point[1] - b) ** 2 + (point[0] ** 2)), point[2]])
-        else:
-            new_coordinate.append([-math.sqrt((point[1] - b) ** 2 + (point[0] ** 2)), point[2]])
+        # if (point[1] - b) * m < 0:
+        #     new_coordinate.append([math.sqrt((point[1] - b) ** 2 + (point[0] ** 2)), point[2]])
+        # else:
+        #     new_coordinate.append([-math.sqrt((point[1] - b) ** 2 + (point[0] ** 2)), point[2]])
+        new_coordinate.append([(m * (point[1] - b) + point[0]) / math.sqrt(m ** 2 + 1), point[2]])
     return np.array(new_coordinate)
 
 def root(a, b, c):
@@ -138,6 +140,14 @@ def root(a, b, c):
         return None, None
     return (-b + math.sqrt(b ** 2 - 4 * a * c)) / 2 / a, (-b - math.sqrt(b ** 2 - 4 * a * c)) / 2 / a
 def point_filters(points):
+    """
+    Filters out the points that are not belpng to a parabola
+    Args:
+        points:
+
+    Returns:
+
+    """
     filtered_points = []
     point_index=0
     check_window = 3
