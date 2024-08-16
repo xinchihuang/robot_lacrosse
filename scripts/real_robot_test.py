@@ -12,6 +12,7 @@ import os
 import time
 import numpy as np
 from utils import *
+from throw_ml import *
 def my_parse_args(arg_list, args_dict):
     # set up base values
     arg_list_len=len(arg_list)
@@ -76,6 +77,8 @@ class Experiment:
         self.g=9.8
 
         self.throw_starts_time=time.time()
+        self.model=SimpleMLP(input_dim=2, hidden_dim=20, output_dim=2)
+        self.model.load_state_dict(torch.load("save_model_throw.pth"))
 
         ##save_related
         self.saved_ball_data = []
@@ -114,6 +117,7 @@ class Experiment:
                     if robot.robot_state=="throw":
                         self.throw_h, distance=1.5,2
                         desired_angle, desired_speed = cal_angle_speed(self.throw_h, distance)
+
                         desired_angle=30
                         desired_speed=30
                         robot.arm_throw_ball(desired_angle, desired_speed)
@@ -130,10 +134,17 @@ class Experiment:
                         elif robot.robot_state=="catch":
                             catcher=robot
                     if not thrower is None and not catcher is None:
+                        # print(thrower.name, catcher.name)
                         distance = math.sqrt((thrower.robot_self_pose[0] - catcher.robot_self_pose[0]) ** 2 + (
                                     thrower.robot_self_pose[1] - catcher.robot_self_pose[1]) ** 2)
                         desired_angle, desired_speed = cal_angle_speed(self.throw_h, distance)
-                        desired_angle = 30
+                        feature = [[self.throw_h, distance]]
+                        feature = torch.tensor(feature)
+                        output = self.model(feature)
+                        min_angle, max_angle, min_vel, max_vel = 25, 35, 29, 31
+                        residual = linear_mapping(output.squeeze().detach().numpy()[0], 0, 1.0, min_angle,
+                                                         max_angle)
+                        desired_angle = desired_angle + residual
                         desired_speed = 30
                         thrower.arm_throw_ball(desired_angle, desired_speed)
                         # print(desired_angle, desired_speed, distance)
@@ -223,7 +234,10 @@ class Experiment:
             for robot in self.robot_list:
                 if robot.robot_state == "catch":
                     vx, vy, omega = robot.get_move_control(self.ball_memory[:self.check_point_window_size])
-                    print(robot.name,vx,vy,omega)
+                    save_robot_data = [float(robot.name), robot.robot_self_pose[0], robot.robot_self_pose[1],
+                                       robot.robot_self_pose[2], robot.robot_self_pose[3]]
+                    self.saved_robot_data.append(save_robot_data)
+                    # print(robot.name,vx,vy,omega)
                     robot.execute(vx, vy, omega)
         elif self.state == "catch":
             # print(self.state)
@@ -231,7 +245,8 @@ class Experiment:
                 # print(robot.robot_state)
                 if robot.robot_state == "catch":
                     vx, vy, omega = robot.get_move_control(self.ball_memory[:self.check_point_window_size])
-                    self.saved_robot_data.append([robot.name].extend(robot.robot_self_pose))
+                    save_robot_data=[float(robot.name),robot.robot_self_pose[0],robot.robot_self_pose[1],robot.robot_self_pose[2],robot.robot_self_pose[3]]
+                    self.saved_robot_data.append(save_robot_data)
                     # print(robot.robot_self_pose,vx,vy,omega)
                     # print(vx,vy,omega)
                     # print(time.time()-self.throw_starts_time)
@@ -311,12 +326,12 @@ class Experiment:
         number = len(files)
         np.save("./saved_ball_data/" + str(
             number) + ".npy", np.array(self.saved_ball_data))
+        print(self.saved_robot_data)
         np.save("./saved_robot_data/" + str(
             number) + ".npy", np.array(self.saved_robot_data))
         np.save("./saved_arm_data/" + str(
             number) + ".npy", np.array(self.saved_arm_input))
-        # np.save("./saved_arm_data/" + str(
-        #     number) + ".npy", np.array(self.saved_arm_input))
+
         print("saved " + str(number))
         self.saved_ball_data = []
         self.saved_robot_data = []

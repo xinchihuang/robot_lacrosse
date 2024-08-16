@@ -6,12 +6,12 @@ import plotly.graph_objects as go
 from scipy.optimize import minimize
 from sympy import symbols, Eq, solve
 
-for i in range(39, 40):
+for i in range(30, 40):
     if os.path.isfile(f'../saved_data/saved_ball_data_30_30//{i}.npy'):
 
         # 加载数据
 
-        arm_data=np.load(f'../saved_data/saved_ball_data_30_30//{i}.npy')
+        arm_data=np.load(f'../saved_data/saved_arm_data_30_30//{i}.npy')
         desired_angle=arm_data[1]
         desired_speed=arm_data[2]
         data = np.load(f'../saved_data/saved_ball_data_30_30//{i}.npy')
@@ -31,9 +31,9 @@ for i in range(39, 40):
         # data = filter_points(data)
 
         # 提取 x, y, z 坐标
-        x = data[:30, 0]
-        y = data[:30, 1]
-        z = data[:30, 2]
+        x = data[:, 0]
+        y = data[:, 1]
+        z = data[:, 2]
 
         # 定义拟合函数
         def fit_plane_and_parabola(params):
