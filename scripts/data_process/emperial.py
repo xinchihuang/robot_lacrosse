@@ -16,13 +16,14 @@ files_and_dirs = os.listdir(
 # Filter out directories, keeping only files
 files = [f for f in files_and_dirs if os.path.isfile(
     os.path.join("../saved_data/saved_ball_data_30_30/", f))]
-number = len(files)
+# number = len(files)-1
+number = 7
 
-ball_memory = np.load('../saved_data/saved_ball_data_30_30/' + str(number-1) + '.npy')
+ball_memory = np.load('../saved_data/saved_ball_data_30_30/' + str(number) + '.npy')
 i = 30
 print(len(ball_memory))
 print(ball_memory)
-ball_memory=ball_memory[3:,:]
+ball_memory=ball_memory[1:,:]
 
 x = ball_memory[:, 0]
 y = ball_memory[:, 1]

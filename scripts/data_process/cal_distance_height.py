@@ -6,15 +6,15 @@ import plotly.graph_objects as go
 from scipy.optimize import minimize
 from sympy import symbols, Eq, solve
 
-for i in range(30, 40):
-    if os.path.isfile(f'../saved_data/saved_ball_data_30_30//{i}.npy'):
+for i in range(10, 20):
+    if os.path.isfile(f'../saved_data/saved_ball_data/{i}.npy'):
 
         # 加载数据
 
-        arm_data=np.load(f'../saved_data/saved_arm_data_30_30//{i}.npy')
+        arm_data=np.load(f'../saved_data/saved_arm_data/{i}.npy')
         desired_angle=arm_data[1]
         desired_speed=arm_data[2]
-        data = np.load(f'../saved_data/saved_ball_data_30_30//{i}.npy')
+        data = np.load(f'../saved_data/saved_ball_data/{i}.npy')
 
 
         def filter_points(points, threshold=0.1):
@@ -76,7 +76,9 @@ for i in range(30, 40):
                           scene=dict(
                               xaxis_title='X axis',
                               yaxis_title='Y axis',
-                              zaxis_title='Z axis'
+                              zaxis_title='Z axis',
+                              aspectmode='manual',
+                              aspectratio=dict(x=1, y=1, z=1)
                           ))
         fig.show()
 

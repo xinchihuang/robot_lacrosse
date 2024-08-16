@@ -319,10 +319,10 @@ class Experiment:
 
     def save_data(self):
         files_and_dirs = os.listdir(
-            "saved_ball_data/")
+            "saved_data/saved_ball_data/")
         # Filter out directories, keeping only files
         files = [f for f in files_and_dirs if os.path.isfile(
-            os.path.join("saved_ball_data/", f))]
+            os.path.join("saved_data/saved_ball_data/", f))]
         number = len(files)
         np.save("./saved_ball_data/" + str(
             number) + ".npy", np.array(self.saved_ball_data))
