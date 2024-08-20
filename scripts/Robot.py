@@ -47,6 +47,7 @@ class Robot:
         self_direction = [math.cos(self.robot_self_pose[3]), math.sin(self.robot_self_pose[3])]
 
         d_theta = calculate_rotation_angle(self_direction, target_direction)
+        # d_theta = math.degrees(d_theta)
         return 0,0,d_theta
     def execute(self,vx, vy, omega):
         if self.robot_state=="idle":
@@ -64,6 +65,8 @@ class Robot:
             # self.executor.stop_robot()
     def reset_arm(self):
         self.arm_executor.reset()
+    def stop(self):
+        self.chassis_executor.stop()
 
 class Launcher:
     def __init__(self, name,chassis_executor=None,arm_executor=None):

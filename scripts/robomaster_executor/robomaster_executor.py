@@ -17,9 +17,9 @@ import time
 from robomaster import robot
 class  RoboMasterExecutor:
     def __init__(self,sn=None):
-        ep_robot = robot.Robot()
-        ep_robot.initialize(conn_type="sta",sn=sn)
-        self.ep_chassis = ep_robot.chassis
+        self.ep_robot = robot.Robot()
+        self.ep_robot.initialize(conn_type="sta",sn=sn)
+        self.ep_chassis = self.ep_robot.chassis
         self.max_speed=3.5
         self.max_rotation_speed=30
         self.sn=sn
@@ -39,10 +39,11 @@ class  RoboMasterExecutor:
 
         # self.ep_chassis.drive_speed(x=vx, y=-vy, z=-vz, timeout=0.02)
         # self.ep_chassis.drive_speed(x=0, y=0, z=0, timeout=5)
-        # if not vx == 0:
-        #     print(vx,vy,vz)
+        # if not vx == 0 or not vy == 0 or not vz == 0:
+            # print(vx,vy,vz)
         self.ep_chassis.drive_speed(x=vx, y=-vy, z=-vz, timeout=1)
         # print(self.contols_count)
         # time.sleep(0.02)
-    def stop_robot(self):
+    def stop(self):
         self.ep_chassis.drive_speed(x=0, y=0, z=0, timeout=1)
+        self.ep_robot.close()

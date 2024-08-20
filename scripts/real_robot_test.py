@@ -13,6 +13,7 @@ import time
 import numpy as np
 from utils import *
 from throw_ml import *
+import signal
 def my_parse_args(arg_list, args_dict):
     # set up base values
     arg_list_len=len(arg_list)
@@ -86,13 +87,15 @@ class Experiment:
         self.saved_arm_input=[]
         self.saved_arm_record=[]
 
+        self.is_running=True
+
     def handle_command(self):
         """
         Handles commands name,state(catch,reset,throw),extra command(desired arm angle,desired speed)
         Returns:
 
         """
-        while True:
+        while self.is_running:
             command=input("Press enter command: ")
             command_list=command.split(",")
             state=command_list[0]
@@ -201,7 +204,7 @@ class Experiment:
             elif state == "rotate":
                 self.state="rotate"
                 for robot in self.robot_list:
-                    robot.robot_state = state
+                    robot.robot_state = "rotate"
 
 
     def process_optitrack_rigid_body_data(self, id, position, rotation):
@@ -223,10 +226,15 @@ class Experiment:
                 # if self.state == "throw" or self.state =="catch" or self.state=="launch":
                 #     self.saved_robot_data.append([id, x_world, y_world, z_world])
         if len(self.robot_list) == 2 and self.state == "rotate":
+            # print(self.state)
+
             robot1 = self.robot_list[0]
             robot2 = self.robot_list[1]
-            if not robot1.robot_self_pose is None and not robot2.robot_self_pose:
+            # print(robot1.robot_state,robot2.robot_state)
+            if not robot1.robot_self_pose is None and not robot2.robot_self_pose is None:
+
                 vx, vy, omega = robot1.get_rotate_control(robot2.robot_self_pose)
+                # print(vx, vy, omega)
                 robot1.execute(vx, vy, omega)
                 vx, vy, omega = robot2.get_rotate_control(robot1.robot_self_pose)
                 robot2.execute(vx, vy, omega)
@@ -254,6 +262,7 @@ class Experiment:
         elif self.state == "launch":
             pass
         elif self.state == "idle":
+
             for robot in self.robot_list:
                 robot.robot_state = "idle"
                 robot.execute(0, 0, 0)
@@ -267,9 +276,12 @@ class Experiment:
         Returns: None
 
         """
-        position = None
-        rotation = None
-        if time.time()-self.throw_starts_time<3:
+        if self.state == "rotate":
+            pass
+
+        elif time.time()-self.throw_starts_time<3:
+            position = None
+            rotation = None
             if self.state=="throw" or self.state=="launch" or self.state=="catch":
                 # print(self.state)
                 ### filter out point that too low
@@ -301,17 +313,19 @@ class Experiment:
                     else:
                         pass
             else:
+                # print("stop")
                 self.saved_ball_data = self.ball_memory
                 if len(self.saved_ball_data) > 30:
                     self.save_data()
-                self.state = "idle"
+                # self.state = "idle"
                 self.ball_memory = []
                 self.saved_robot_data = []
         else:
+            # print("stop")
             self.saved_ball_data=self.ball_memory
             if len(self.saved_ball_data)>30:
                 self.save_data()
-            self.state = "idle"
+            # self.state = "idle"
             self.ball_memory = []
             self.saved_robot_data = []
 
@@ -335,7 +349,10 @@ class Experiment:
         print("saved " + str(number))
         self.saved_ball_data = []
         self.saved_robot_data = []
-
+    def stop(self):
+        self.running = False
+        for robot in self.robot_list:
+            robot.stop()
 if __name__ == "__main__":
     # ball_launcher_chassis_executor = None
     # ball_launcher_arm_executor = LauncherExecutor(('192.168.0.106', 12345))
@@ -384,6 +401,18 @@ if __name__ == "__main__":
     # move_robot_thread = Thread(target=experiment.move_robot)
     # move_robot_thread.start()
 
+    def make_handler(experiment,command_thread,streaming_client):
+        def signal_handler(signum, frame):
+            experiment.stop()
+            command_thread.join()
+            streaming_client.shutdown()
+            print("Closing")
+            sys.exit(0)
 
+        return signal_handler
+
+
+    stop_handler = make_handler(experiment,command_thread,streaming_client)
+    signal.signal(signal.SIGINT, stop_handler)
 
 
