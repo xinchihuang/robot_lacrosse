@@ -18,6 +18,7 @@ class Robot:
         self.g = 9.8
         self.max_speed = 3
         self.arm_pose = [-0.35, 0, 0.3]
+
         # landing prediction
         self.save_data=[]
         self.saved=False

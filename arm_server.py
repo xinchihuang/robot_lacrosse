@@ -29,6 +29,7 @@ def start_server():
                         target_speed = float(data_list[2])
                         arm_data = arm.throw_to_angle_with_speed(target_angle=target_angle, target_speed=target_speed)
                         arm_data_str = str(arm_data)
+                        print(arm_data_str)
                     elif mode == 'reset':
                         arm.reset_ball()
                     elif mode == 'stop':

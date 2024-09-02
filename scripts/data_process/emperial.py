@@ -12,14 +12,14 @@ import plotly.express as px
 import pandas as pd
 
 files_and_dirs = os.listdir(
-    "../saved_data/saved_ball_data_30_30/")
+    "../saved_ball_data/")
 # Filter out directories, keeping only files
 files = [f for f in files_and_dirs if os.path.isfile(
-    os.path.join("../saved_data/saved_ball_data_30_30/", f))]
-# number = len(files)-1
-number = 7
+    os.path.join("../saved_ball_data/", f))]
+number = len(files)-1
 
-ball_memory = np.load('../saved_data/saved_ball_data_30_30/' + str(number) + '.npy')
+
+ball_memory = np.load('../saved_ball_data/' + str(number) + '.npy')
 i = 30
 print(len(ball_memory))
 print(ball_memory)

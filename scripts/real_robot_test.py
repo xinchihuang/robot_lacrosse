@@ -101,8 +101,10 @@ class Experiment:
             state=command_list[0]
             if state == "1":
                 command_list=["throw","2","1"]
+            elif state == "2":
+                command_list=["throw","1","2"]
             ### throw case
-            if state == "throw" or state=="1":
+            if state == "throw" or state=="1" or state=="2":
                 if len(self.robot_list) == 1:
                     robot=self.robot_list[0]
                     robot.robot_state = "throw"
@@ -333,14 +335,13 @@ class Experiment:
 
     def save_data(self):
         files_and_dirs = os.listdir(
-            "saved_data/saved_ball_data/")
+            "./saved_ball_data/")
         # Filter out directories, keeping only files
         files = [f for f in files_and_dirs if os.path.isfile(
-            os.path.join("saved_data/saved_ball_data/", f))]
+            os.path.join("./saved_ball_data/", f))]
         number = len(files)
         np.save("./saved_ball_data/" + str(
             number) + ".npy", np.array(self.saved_ball_data))
-        print(self.saved_robot_data)
         np.save("./saved_robot_data/" + str(
             number) + ".npy", np.array(self.saved_robot_data))
         np.save("./saved_arm_data/" + str(
