@@ -10,17 +10,17 @@ import pandas as pd
 saved_ball_data=[]
 saved_robot_data=[]
 
-for i in range(0,40):
+for i in range(0,100):
 
-    robot_file=f"../saved_data/saved_robot_data/{i}.npy"
+    robot_file=f"../saved_robot_data/{i}.npy"
     robot_data = np.load(robot_file)
     robot_data = filter_points(robot_data)
     saved_robot_data.append(robot_data)
-    ball_file = f"../saved_data/saved_ball_data/{i}.npy"
+    ball_file = f"../saved_ball_data/{i}.npy"
     ball_data = np.load(ball_file)
     ball_data = filter_points(ball_data)
     saved_ball_data.append(ball_data)
-success_file=f'../jieqiubiao.csv'
+success_file=f'../jieqiubiao_9_8.csv'
 success_df = pd.read_csv(success_file, header=None)
 def plot_ball_robot_local(saved_ball_data,saved_robot_data,success_df,parabola_filter):
     parabola_filter = parabola_filter
@@ -33,7 +33,7 @@ def plot_ball_robot_local(saved_ball_data,saved_robot_data,success_df,parabola_f
     ball_fail=[]
     ball_almost=[]
     number_of_data=len(saved_ball_data)
-    for i in range(1, 20):
+    for i in range(0,100):
 
         # print(saved_ball_data[i])
         ball_data = saved_ball_data[i]
@@ -131,9 +131,9 @@ def plot_ball_robot_global(saved_ball_data,saved_robot_data,success_df,parabola_
     ball_fail=[]
     ball_almost=[]
     number_of_data=len(saved_ball_data)
-    for i in range(1, 20):
-        if i == 6 or i == 34:
-            continue
+    for i in range(0,100):
+        # if i == 6 or i == 34:
+        #     continue
         # print(saved_ball_data[i])
         ball_data = saved_ball_data[i]
         parabola_filter.fit(ball_data)
@@ -272,8 +272,8 @@ def cal_ball_landing(saved_ball_data):
     parabola_filter=ParabolaFitterDirect3D(200)
     for i in range(0,len(saved_ball_data)):
         print(i)
-        if i==27 or i==30:
-            continue
+        # if i==27 or i==30:
+        #     continue
         # print(saved_ball_data[i])
 
         ball_data=saved_ball_data[i]
