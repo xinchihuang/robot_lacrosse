@@ -123,7 +123,7 @@ class Experiment:
                         self.throw_h, distance=1.5,2
                         desired_angle, desired_speed = cal_angle_speed(self.throw_h, distance)
 
-                        desired_angle=30
+                        desired_angle=35
                         desired_speed=30
                         robot.arm_throw_ball(desired_angle, desired_speed)
                         # self.arm_msg=arm_msg.decode()
@@ -375,7 +375,7 @@ if __name__ == "__main__":
     # experiment.robot_list.append(launcher)
     experiment.robot_list.append(robot1)
     experiment.robot_list.append(robot2)
-
+    #
     optionsDict = {}
     optionsDict["clientAddress"] = "127.0.0.1"
     optionsDict["serverAddress"] = "127.0.0.1"

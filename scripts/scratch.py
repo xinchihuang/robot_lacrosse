@@ -1,13 +1,17 @@
-import signal
+import math
+import random
 import sys
-
-def signal_handler(signum, frame):
-    print("接收到信号，程序将退出...")
-    sys.exit(0)
-
-# 设置信号处理函数
-signal.signal(signal.SIGINT, signal_handler)
-
-print("程序正在运行，请尝试按 Ctrl+C 退出...")
-while True:
-    pass  # 无限循环，等待信号
+from scripts.optitrack_sdk.NatNetClient import NatNetClient
+from scripts.robomaster_executor.robomaster_executor import RoboMasterExecutor
+from Robot import *
+from scripts.arm_control.arm_executor import *
+from scripts.utils import optitrack_coordinate_to_world_coordinates
+from scripts.data_process.check_parabola_point import check_parabola_point
+from threading import Thread
+import os
+import time
+import numpy as np
+from utils import *
+from throw_ml import *
+import signal
+print(np.load("saved_robot_data/0.npy"))

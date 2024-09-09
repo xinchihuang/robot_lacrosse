@@ -13,7 +13,7 @@ def load_data():
     dataset=[]
     labelset=[]
     for i in range(100):
-        path = "/home/xinchi/catkin_ws/src/robot_lacrosse/scripts/saved_ball_data_old/" + str(i) + ".npy"
+        path = "./saved_ball_data/" + str(i) + ".npy"
         if os.path.isfile(path):
             data=np.load(path)
             ball_memory=data
@@ -43,6 +43,7 @@ def load_data():
 
             dataset.append(new_points_to_fit)
             residual=[landing_x_parabola-new_points[-1][0]]
+            print(residual)
             labelset.append(residual)
     # print(labelset)
     return dataset,labelset

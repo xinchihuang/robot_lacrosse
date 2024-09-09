@@ -37,7 +37,7 @@ class Robot:
         landing_target_x, landing_target_y, drop_t = landing_point_predictor_lstm(ball_memory,self.model,self.robot_self_pose, self.arm_pose[2])
         landing_target_x = landing_target_x - math.cos(theta_world) * self.arm_pose[0]
         landing_target_y = landing_target_y - math.sin(theta_world) * self.arm_pose[0]
-        # print(landing_target_x,landing_target_y,self.robot_self_pose)
+
         vx, vy, omega = central_controller(self.robot_self_pose[:3], theta_world,
                                            [landing_target_x, landing_target_y], 0)
 

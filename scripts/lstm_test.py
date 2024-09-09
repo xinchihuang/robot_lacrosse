@@ -33,8 +33,8 @@ count=0
 analytical_error=[]
 model_error=[]
 for number in range(100):
-    if os.path.isfile('saved_ball_data_old/' + str(number) + '.npy'):
-        ball_memory = np.load('saved_ball_data_old/' + str(number) + '.npy')
+    if os.path.isfile('saved_ball_data/' + str(number) + '.npy'):
+        ball_memory = np.load('saved_ball_data/' + str(number) + '.npy')
         check_point=30
         ball_memory=ball_memory[0:,:]
         ball_memory_to_fit=ball_memory[:check_point,:]
