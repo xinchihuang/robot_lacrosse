@@ -23,7 +23,6 @@ class Robot:
         self.save_data=[]
         self.saved=False
         self.robot_state=None
-        self.parabola_state=False
         self.robot_self_pose=None
 
     def get_move_control(self,ball_memory):
@@ -55,6 +54,9 @@ class Robot:
             self.chassis_executor.execute([0,0,0])
         else:
             self.chassis_executor.execute([vx, vy, omega])
+
+    def send(self, robot1_pose=None,robot2_pose=None,ball_memory=None,state=None):
+        pass
     #
     def arm_throw_ball(self,desired_angle,desired_speed):
         arm_msg=self.arm_executor.throw(desired_angle,desired_speed)
