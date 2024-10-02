@@ -43,15 +43,16 @@ class RobotServer:
         ball_memory_str=','.join(map(str, series_ball_memory))
         command = f"{state};{robot_pose_str};{ball_memory_str}"
         self.client_socket.sendall(command.encode())
-    def stop_chassis(self):
-        command = "idle"
-        self.client_socket.sendall(command.encode())
-    def send_arm_data(self,desired_angle, desired_speed):
-        command=f"throw;{desired_angle};{desired_speed}"
+    def send_arm_data(self,desired_angle, desired_speed,distance,height):
+        command=f"throw;{desired_angle};{desired_speed};{distance};{height}"
         self.client_socket.sendall(command.encode())
     def reset_arm(self):
         command = "reset"
         self.client_socket.sendall(command.encode())
+    def stop_chassis(self):
+        command = "idle"
+        self.client_socket.sendall(command.encode())
+
 
 def my_parse_args(arg_list, args_dict):
     # set up base values
@@ -161,14 +162,10 @@ class Experiment:
                     if robot.robot_state=="throw":
                         self.throw_h, distance=1.5,2
                         desired_angle, desired_speed = cal_angle_speed(self.throw_h, distance)
-
                         desired_angle=35
                         desired_speed=30
                         robot.send_arm_data(desired_angle, desired_speed)
-                        # self.arm_msg=arm_msg.decode()
-                        # print(self.arm_msg)
                         self.saved_arm_input = [1, desired_angle, desired_speed]
-
                 else:
                     thrower=None
                     catcher=None
@@ -182,17 +179,7 @@ class Experiment:
                         distance = math.sqrt((thrower.robot_self_pose[0] - catcher.robot_self_pose[0]) ** 2 + (
                                     thrower.robot_self_pose[1] - catcher.robot_self_pose[1]) ** 2)
                         desired_angle, desired_speed = cal_angle_speed(self.throw_h, distance)
-                        feature = [[self.throw_h, distance]]
-                        feature = torch.tensor(feature)
-                        output = self.model(feature)
-                        min_angle, max_angle, min_vel, max_vel = 25, 35, 29, 31
-                        residual = linear_mapping(output.squeeze().detach().numpy()[0], 0, 1.0, min_angle,
-                                                         max_angle)
-                        desired_angle = desired_angle + residual
-                        desired_speed = 30
                         thrower.send_arm_data(desired_angle, desired_speed)
-                        # print(desired_angle, desired_speed, distance)
-                        # desired_speed = desired_speed
                         self.saved_arm_input = [1, desired_angle, desired_speed]
                 self.throw_starts_time=time.time()
             ### reset case
@@ -245,7 +232,7 @@ class Experiment:
             # print(robot1.robot_state,robot2.robot_state)
             if not robot1.robot_self_pose is None and not robot2.robot_self_pose is None:
 
-                robot1.send_chassis_rotate_data("rotate",robot1.robot_self_pose,robot2.robot_self_pose)
+                robot1.send_chassis_rotate_data("rotate",robot1.robot_self_pose, robot2.robot_self_pose)
                 robot2.send_chassis_rotate_data("rotate",robot2.robot_self_pose, robot1.robot_self_pose)
         elif self.state == "throw":
             for robot in self.robot_list:

@@ -8,6 +8,7 @@ from scripts.arm_control.pcan_cybergear import CANMotorController
 
 class Arm:
     def __init__(self):
+
         self.bus = can.interface.Bus(interface="pcan", channel="PCAN_USBBUS1", bitrate=1000000)
         self.motor1 = CANMotorController(self.bus, motor_id=101, main_can_id=254)
         self.motor2 = CANMotorController(self.bus, motor_id=102, main_can_id=254)
