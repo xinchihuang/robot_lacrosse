@@ -6,7 +6,7 @@ from torch.utils.data import Dataset, DataLoader
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
-from utils import *
+from scripts.utils import *
 # Load CSV file
 def linear_mapping(data, old_min, old_max, new_min, new_max):
     # 计算系数 a 和 b

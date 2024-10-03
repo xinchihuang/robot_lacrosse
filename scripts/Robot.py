@@ -3,9 +3,9 @@ import time
 from scripts.data_process.check_parabola_point import check_parabola_point
 from scripts.chassis_control.chassis_controller import optitrack_coordinate_to_world_coordinates, central_controller,landing_point_predictor,landing_point_predictor_lstm
 from scripts.lstm_scratch import DynamicLSTM
-from throw_ml import *
+from scripts.throw_ml import *
 import torch
-from utils import calculate_rotation_angle
+from scripts.utils import calculate_rotation_angle
 class Robot:
     def __init__(self, name,chassis_executor=None,arm_executor=None):
         self.name=name

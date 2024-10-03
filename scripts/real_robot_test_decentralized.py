@@ -310,7 +310,7 @@ class Experiment:
                 self.ball_memory = []
                 self.saved_robot_data = []
         else:
-            # print("stop")
+            self.state="idle"
             self.saved_ball_data=self.ball_memory
             if len(self.saved_ball_data)>30:
                 self.save_data()
@@ -341,6 +341,51 @@ class Experiment:
         self.running = False
         for robot in self.robot_list:
             robot.stop()
+def mock_test():
+    robot1 = RobotServer(('192.168.0.105', 12345))
+    robot2 = RobotServer(('192.168.0.104', 12345))
+    experiment = Experiment()
+    # experiment.robot_list.append(launcher)
+    experiment.robot_list.append(robot1)
+    experiment.robot_list.append(robot2)
+    #
+    optionsDict = {}
+    optionsDict["clientAddress"] = "127.0.0.1"
+    optionsDict["serverAddress"] = "127.0.0.1"
+    optionsDict["use_multicast"] = True
+
+    # This will create a new NatNet client
+    optionsDict = my_parse_args(sys.argv, optionsDict)
+
+    streaming_client = NatNetClient()
+    streaming_client.set_client_address(optionsDict["clientAddress"])
+    streaming_client.set_server_address(optionsDict["serverAddress"])
+    streaming_client.set_use_multicast(optionsDict["use_multicast"])
+
+    streaming_client.rigid_body_listener = experiment.process_optitrack_rigid_body_data
+    streaming_client.lacrosse_listener = experiment.process_optitrack_ball_data
+    # Start up the streaming client now that the callbacks are set up.
+    # This will run perpetually, and operate on a separate thread.
+    is_running = streaming_client.run()
+
+    command_thread = Thread(target=experiment.handle_command)
+    command_thread.start()
+
+    # move_robot_thread = Thread(target=experiment.move_robot)
+    # move_robot_thread.start()
+
+    def make_handler(experiment, command_thread, streaming_client):
+        def signal_handler(signum, frame):
+            experiment.stop()
+            command_thread.join()
+            streaming_client.shutdown()
+            print("Closing")
+            sys.exit(0)
+
+        return signal_handler
+
+    stop_handler = make_handler(experiment, command_thread, streaming_client)
+    signal.signal(signal.SIGINT, stop_handler)
 if __name__ == "__main__":
 
     robot1 = RobotServer(('192.168.0.105', 12345))

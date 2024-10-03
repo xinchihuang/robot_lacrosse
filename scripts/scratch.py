@@ -14,4 +14,5 @@ import numpy as np
 from utils import *
 from throw_ml import *
 import signal
-print(np.load("saved_robot_data/0.npy"))
+for i in range(0,30,3):
+    print(i)
