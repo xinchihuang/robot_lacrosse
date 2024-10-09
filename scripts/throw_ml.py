@@ -82,7 +82,7 @@ if __name__ == "__main__":
     dataset = SimpleDataset(train_features, train_mapped_labels)
     dataloader = DataLoader(dataset, batch_size=10, shuffle=True)
     input_dim = 2
-    hidden_dim = 20
+    hidden_dim = 100
     output_dim = 2
     # Create the model
     model = SimpleMLP(input_dim, hidden_dim, output_dim)
