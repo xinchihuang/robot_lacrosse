@@ -33,10 +33,10 @@ def start_server():
                         distance = float(data_list[3])
                         height = float(data_list[4])
                         target_angle,target_speed=robot.get_arm_control_old(height=height,distance=distance)
-                        print(target_angle,target_speed)
+                        # print(target_angle,target_speed)
                         arm_data = arm.throw_to_angle_with_speed(target_angle=target_angle, target_speed=target_speed)
                         arm_data_str = str(arm_data)
-                        print(arm_data_str)
+                        # print(arm_data_str)
                     elif mode == 'rotate':
 
                         robot_self_pose_list = data_list[1].split(",")
