@@ -343,11 +343,11 @@ class Experiment:
             robot.stop()
 def mock_test():
     robot1 = RobotServer(('192.168.0.105', 12345))
-    robot2 = RobotServer(('192.168.0.104', 12345))
+    # robot2 = RobotServer(('192.168.0.104', 12345))
     experiment = Experiment()
     # experiment.robot_list.append(launcher)
     experiment.robot_list.append(robot1)
-    experiment.robot_list.append(robot2)
+    # experiment.robot_list.append(robot2)
     #
     optionsDict = {}
     optionsDict["clientAddress"] = "127.0.0.1"
