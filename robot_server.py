@@ -12,7 +12,7 @@ def start_server():
     arm = Arm()
     arm.enable_motors()
     chassis=RoboMasterExecutor()
-    robot=Robot(name=1,arm_executor=arm)
+    robot=Robot(name=1,arm_executor=arm,chassis_executor=chassis)
 
     while True:
         client_socket, addr = server_socket.accept()

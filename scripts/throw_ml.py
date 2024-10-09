@@ -33,7 +33,7 @@ class SimpleDataset(Dataset):
 
 
 class SimpleMLP(nn.Module):
-    def __init__(self, input_dim=2, hidden_dim=20, output_dim=2):
+    def __init__(self, input_dim=2, hidden_dim=100, output_dim=2):
         super(SimpleMLP, self).__init__()
         self.fc1 = nn.Linear(input_dim, hidden_dim)  # First fully connected layer
         self.relu = nn.ReLU()                         # Activation function
