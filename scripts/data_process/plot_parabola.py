@@ -48,38 +48,7 @@ from scripts.utils import *
 #     fig.show()
 #
 
-def plot_parabola(raw_data,a,b,c):
 
-
-    x=raw_data[:,0]
-    z=raw_data[:,1]
-
-    line_x = np.linspace(min(x), max(x), 1000)
-    line_z = a * line_x ** 2 + b * line_x + c
-    fig = go.Figure()
-
-    # 添加内点
-    fig.add_trace(go.Scatter(x=x, y=z,
-                             mode='markers', name='Points', marker=dict(color='blue')))
-
-    # 添加外点
-    # fig.add_trace(go.Scatter(x=x[outlier_mask].flatten(), y=z[outlier_mask],
-    #                          mode='markers', name='Outliers', marker=dict(color='red')))
-
-    # 添加拟合的抛物线
-    fig.add_trace(go.Scatter(x=line_x.flatten(), y=line_z, mode='lines',
-                             name='Fitted Parabola', line=dict(color='green')))
-
-    # 更新图形布局
-    fig.update_layout(title='RANSAC Parabola Fitting and Noise Detection',
-                      xaxis_title='x',
-                      yaxis_title='z',
-                      legend_title='Legend',
-                      width=800,
-                      height=600)
-
-    # 显示图形
-    fig.show()
 
 
 

@@ -16,20 +16,19 @@ import math
 import time
 from robomaster import robot
 class  RoboMasterExecutor:
-    def __init__(self):
-        ep_robot = robot.Robot()
-        ep_robot.initialize(conn_type="sta")
-        self.ep_chassis = ep_robot.chassis
+    def __init__(self,sn=None):
+        self.ep_robot = robot.Robot()
+        self.ep_robot.initialize(conn_type="rndis",sn=sn)
+        self.ep_chassis = self.ep_robot.chassis
         self.max_speed=3.5
-        self.max_rotation_speed=10
-        self.contols_count=0
+        self.max_rotation_speed=30
+        self.sn=sn
 
     def execute(self,controls):
 
         vx=controls[0]
         vy=controls[1]
         vz=math.degrees(controls[2])
-        # print(vx,vy,vz)
         if not vx==0:
             vx = min(abs(vx), self.max_speed) * abs(vx) / vx
         if not vy == 0:
@@ -40,12 +39,11 @@ class  RoboMasterExecutor:
 
         # self.ep_chassis.drive_speed(x=vx, y=-vy, z=-vz, timeout=0.02)
         # self.ep_chassis.drive_speed(x=0, y=0, z=0, timeout=5)
-        if not vx==0 or not vy==0 or not vz==0:
-            print(vx,vy,vz,time.time())
-        self.ep_chassis.drive_speed(x=vx, y=-vy, z=-vz, timeout=5)
-        self.contols_count+=1
+        # if not vx == 0 or not vy == 0 or not vz == 0:
+        #     print(vx,vy,vz)
+        self.ep_chassis.drive_speed(x=vx, y=-vy, z=-vz, timeout=1)
         # print(self.contols_count)
         # time.sleep(0.02)
-    def stop_robot(self):
-        self.ep_chassis.drive_speed(x=0, y=0, z=0, timeout=5)
-        self.contols_count=0
+    def stop(self):
+        self.ep_chassis.drive_speed(x=0, y=0, z=0, timeout=1)
+        self.ep_robot.close()

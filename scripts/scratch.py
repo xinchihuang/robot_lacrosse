@@ -1,20 +1,18 @@
-
-import os.path
-import shutil
-
-# 定义源文件路径和目标文件路径
-
-
-# 复制文件
-
-model_error=[]
-for number in range(100):
-    if os.path.isfile('saved_ball_data/' + str(number) + '.npy'):
-        source_path_b = 'saved_ball_data/' + str(number) + '.npy'
-        destination_path_b = 'selected_data/ball_data/' + str(number) + '.npy'
-        source_path_a = 'saved_arm_data/' + str(number) + '.npy'
-        destination_path_a = 'selected_data/arm_data/' + str(number) + '.npy'
-        # 复制文件
-        shutil.copy(source_path_b, destination_path_b)
-        shutil.copy(source_path_a, destination_path_a)
-
+import math
+import random
+import sys
+from scripts.optitrack_sdk.NatNetClient import NatNetClient
+from scripts.robomaster_executor.robomaster_executor import RoboMasterExecutor
+from Robot import *
+from scripts.arm_control.arm_executor import *
+from scripts.utils import optitrack_coordinate_to_world_coordinates
+from scripts.data_process.check_parabola_point import check_parabola_point
+from threading import Thread
+import os
+import time
+import numpy as np
+from utils import *
+from throw_ml import *
+import signal
+for i in range(0,30,3):
+    print(i)

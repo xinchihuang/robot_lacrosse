@@ -8,19 +8,22 @@ import math
 from sklearn.linear_model import RANSACRegressor
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.pipeline import make_pipeline
+import plotly.express as px
+import pandas as pd
 
 files_and_dirs = os.listdir(
     "../saved_ball_data/")
 # Filter out directories, keeping only files
 files = [f for f in files_and_dirs if os.path.isfile(
     os.path.join("../saved_ball_data/", f))]
-number = len(files)
-number=31
-ball_memory = np.load('../saved_ball_data/' + str(number-1) + '.npy')
+number = len(files)-1
+
+
+ball_memory = np.load('../saved_ball_data/' + str(number) + '.npy')
 i = 30
 print(len(ball_memory))
 print(ball_memory)
-ball_memory=ball_memory[6:,:]
+ball_memory=ball_memory[1:,:]
 
 x = ball_memory[:, 0]
 y = ball_memory[:, 1]
@@ -123,6 +126,22 @@ fig.update_layout(title='RANSAC Parabola Fitting and Noise Detection',
                   legend_title='Legend',
                   width=800,
                   height=600)
-
+fig.show()
 # 显示图形
+# Create an index for the points
+index = np.arange(len(x))
+
+# Create a DataFrame for plotting
+data = {'x': x, 'y': y, 'z': z, 'index': index}
+df = pd.DataFrame(data)
+
+# Create a 3D scatter plot with color based on index
+fig = px.scatter_3d(df, x='x', y='y', z='z', color='index', color_continuous_scale=px.colors.sequential.Bluered)
+
+# Update the layout to maintain the 1:1:1 aspect ratio
+fig.update_layout(scene=dict(
+    aspectmode='manual',
+    aspectratio=dict(x=1, y=1, z=1)
+))
+
 fig.show()

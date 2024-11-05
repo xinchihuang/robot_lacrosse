@@ -18,7 +18,7 @@ from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 import cv2
 from utils import rotate_matrix_coordinate,calculate_rotation_angle
-from chassis_control.chassis_controller import landing_point_predictor
+# from chassis_control.chassis_controller import landing_point_predictor
 def check_distance(position1,position2):
     return ((position1.x-position2.x)**2+(position1.y-position2.y)**2+(position1.z-position2.z)**2)**0.5
 def get_root(a,b,c):
@@ -204,13 +204,13 @@ class Robot:
 
         if self.state == "catch" and ball_position.z>self.arm_pose[2]:
 
-            # t = (ball_velocity.z + math.sqrt(
-            #     ball_velocity.z * ball_velocity.z + (ball_position.z - self.arm_pose[2]) * self.g * 2)) / self.g
-            # target_x = ball_position.x + t * ball_velocity.x
-            # target_y = ball_position.y + t * ball_velocity.y
-            # self.catch_target_pose = [target_x, target_y, 0]
+            t = (ball_velocity.z + math.sqrt(
+                ball_velocity.z * ball_velocity.z + (ball_position.z - self.arm_pose[2]) * self.g * 2)) / self.g
+            target_x = ball_position.x + t * ball_velocity.x
+            target_y = ball_position.y + t * ball_velocity.y
+            self.catch_target_pose = [target_x, target_y, 0]
             # target_x, target_y=get_landing_position(self.ball_memory,robot_position)
-            target_x, target_y,_ = landing_point_predictor(self.ball_memory)
+            # target_x, target_y,_ = landing_point_predictor(self.ball_memory)
             if not target_x==None and not target_y==None:
                 self.catch_target_pose = [target_x, target_y, 0]
             if self.frame_count%50==0:
@@ -226,8 +226,8 @@ class Robot:
             distance_x = target_x - robot_x - bias_x
             distance_y = target_y - robot_y - bias_y
 
-            vx= min(abs(distance_x)*10,1)*self.max_speed*(distance_x)/abs(distance_x)
-            vy= min(abs(distance_y)*10,1)*self.max_speed*(distance_y)/abs(distance_y)
+            vx= min(abs(distance_x)*5,1)*self.max_speed*(distance_x)/abs(distance_x)
+            vy= min(abs(distance_y)*5,1)*self.max_speed*(distance_y)/abs(distance_y)
             x_relative = math.cos(theta) * vx + math.sin(theta) * vy
             y_relative = -math.sin(theta) * vx + math.cos(theta) * vy
 

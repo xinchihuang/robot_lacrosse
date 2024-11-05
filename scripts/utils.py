@@ -7,7 +7,23 @@ from squaternion import Quaternion
 from sklearn.linear_model import RANSACRegressor
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.pipeline import make_pipeline
+from scipy.spatial.transform import Rotation as R
 import plotly.graph_objects as go
+def my_parse_args(arg_list, args_dict):
+    # set up base values
+    arg_list_len=len(arg_list)
+    if arg_list_len>1:
+        args_dict["serverAddress"] = arg_list[1]
+        if arg_list_len>2:
+            args_dict["clientAddress"] = arg_list[2]
+        if arg_list_len>3:
+            if len(arg_list[3]):
+                args_dict["use_multicast"] = True
+                if arg_list[3][0].upper() == "U":
+                    args_dict["use_multicast"] = False
+
+    return args_dict
+
 def calculate_rotation_angle(v1, v2):
     dot_product = np.dot(v1, v2)
     norm_v1 = np.linalg.norm(v1)
@@ -143,6 +159,7 @@ def check_distance(position1,position2):
     return ((position1.x-position2.x)**2+(position1.y-position2.y)**2+(position1.z-position2.z)**2)**0.5
 
 def fit_line(ball_memory):
+    ball_memory=np.array(ball_memory)
     x = ball_memory[:, 0]
     x_reshape = x.reshape(-1, 1)
     y = ball_memory[:, 1]
@@ -169,12 +186,14 @@ def fit_parabola(ball_memory):
     return a, b, c
 
 def world_to_parabola_coordinate(ball_memory, m, b):
+
     new_coordinate = []
     for point in ball_memory:
-        if (point[1] - b) * m > 0:
-            new_coordinate.append([math.sqrt((point[1] - b) ** 2 + (point[0] ** 2)), point[2]])
-        else:
-            new_coordinate.append([-math.sqrt((point[1] - b) ** 2 + (point[0] ** 2)), point[2]])
+        # if (point[1] - b) * m < 0:
+        #     new_coordinate.append([math.sqrt((point[1] - b) ** 2 + (point[0] ** 2)), point[2]])
+        # else:
+        #     new_coordinate.append([-math.sqrt((point[1] - b) ** 2 + (point[0] ** 2)), point[2]])
+        new_coordinate.append([(m * (point[1] - b) + point[0]) / math.sqrt(m ** 2 + 1), point[2]])
     return np.array(new_coordinate)
 
 def root(a, b, c):
@@ -194,13 +213,21 @@ def root(a, b, c):
         return None, None
     return (-b + math.sqrt(b ** 2 - 4 * a * c)) / 2 / a, (-b - math.sqrt(b ** 2 - 4 * a * c)) / 2 / a
 def point_filters(points):
+    """
+    Filters out the points that are not belpng to a parabola
+    Args:
+        points:
+
+    Returns:
+
+    """
     filtered_points = []
     point_index=0
     check_window = 3
     thresh = 0.5
     while point_index<len(points)-1:
-        ### check error type 1: Noise point far too far away
-        if points[point_index][1]<0.47:
+        ### check error type 1: Noise point far too low
+        if points[point_index][1]<0.4:
             point_index += 1
             continue
         ### check error type 2: Noise point far too far away
@@ -220,3 +247,32 @@ def point_filters(points):
                 filtered_points.append(points[point_index])
         point_index+=1
     return np.array(filtered_points)
+def optitrack_coordinate_to_world_coordinates(position, rotation,is_ball=False):
+    """
+    Converts a rigid body position or point position from optitrack coordinate to world coordinates
+    Args:
+        position: [x, y, z] x front, y up, z right
+        rotation: Quaternion (x, y, z, w)
+
+    Returns:
+        x, y, z, theta: x front, y left, z up, theta in radians from x-axis ccw
+    """
+    # Convert position: swap y and z and negate the new y to change from right to left
+
+    world_pos = np.array([position[0], -position[2], position[1]])
+    if is_ball == True:
+        return world_pos[0], world_pos[1], world_pos[2], 0
+    x, y, z, w = rotation
+    rotation = R.from_quat([x, y, z, w])
+    # Convert to Euler angles
+    euler_angles = rotation.as_euler('yzx', degrees=False)
+    # print(f"Euler angles: {euler_angles}")
+    beta = euler_angles[0]
+    return world_pos[0], world_pos[1], world_pos[2], beta
+def cal_angle_speed(h,d,g=9.8,arm_length=0.28):
+    v_vertical=math.sqrt(2*g*h)
+    t=math.sqrt(8*h/g)
+    v_horizon=d/t
+    linear_speed=math.sqrt(v_horizon**2+v_vertical**2)
+    angle=math.atan(v_horizon/v_vertical)
+    return math.degrees(angle),linear_speed/arm_length
