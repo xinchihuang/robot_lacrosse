@@ -1,7 +1,8 @@
 import numpy as np
-# from cv_bridge import CvBridge, CvBridgeError
+from cv_bridge import CvBridge, CvBridgeError
 import math
 import cv2
+from pyglet import image
 from squaternion import Quaternion
 from sklearn.linear_model import RANSACRegressor
 from sklearn.preprocessing import PolynomialFeatures
@@ -15,7 +16,6 @@ def calculate_rotation_angle(v1, v2):
     cross_product = v1[0] * v2[1] - v1[1] * v2[0]
     angle = np.arctan2(cross_product, cos_theta)
     return angle
-
 def rotate_matrix_coordinate(r_x,r_y,r_z):
     """
     Right hand coordinate rotation matrix for coordinate rotation
@@ -50,6 +50,7 @@ def detect_ball(data):
     # Detect Ball
     bridge = CvBridge()
     cv_image = bridge.imgmsg_to_cv2(data, "bgr8")
+    print(cv_image.shape)
     hsv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2HSV)
     lower_blue = np.array([100, 150, 50])
     upper_blue = np.array([140, 255, 255])
@@ -65,6 +66,78 @@ def detect_ball(data):
             # if self.robot_name=="robot1":
             #     print(self.robot_name,f"Centroid of the blue object: X Position {x_pixel}, Y Position {y_pixel}")
     return x_pixel,y_pixel
+def detect_ball_3D(data):
+    ball_size = 0.055
+    focal_length = 500.39832201574455
+
+    def estimate_distance(pixel_height, focal_length=focal_length, known_height=ball_size):
+        distance = (focal_length * known_height) / pixel_height
+        return distance
+
+    def non_maximum_suppression(boxes, scores, overlap_threshold=0.8):
+        if len(boxes) == 0:
+            return []
+
+        boxes = np.array(boxes)
+        scores = np.array(scores)
+        x1, y1, x2, y2 = boxes[:, 0], boxes[:, 1], boxes[:, 2], boxes[:, 3]
+        areas = (x2 - x1 + 1) * (y2 - y1 + 1)
+        indices = np.argsort(scores)[::-1]
+
+        selected_boxes = []
+        while len(indices) > 0:
+            i = indices[0]
+            selected_boxes.append(i)
+            xx1 = np.maximum(x1[i], x1[indices[1:]])
+            yy1 = np.maximum(y1[i], y1[indices[1:]])
+            xx2 = np.minimum(x2[i], x2[indices[1:]])
+            yy2 = np.minimum(y2[i], y2[indices[1:]])
+
+            w = np.maximum(0, xx2 - xx1 + 1)
+            h = np.maximum(0, yy2 - yy1 + 1)
+            overlap = (w * h) / areas[indices[1:]]
+
+            indices = np.delete(indices, np.concatenate(([0], np.where(overlap > overlap_threshold)[0] + 1)))
+
+        return [boxes[i] for i in selected_boxes]
+
+    bridge = CvBridge()
+    cv_image = bridge.imgmsg_to_cv2(data, "bgr8")
+    image_size=cv_image.shape[0]
+    hsv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2HSV)
+    lower_blue = np.array([100, 150, 50])
+    upper_blue = np.array([140, 255, 255])
+    mask = cv2.inRange(hsv_image, lower_blue, upper_blue)
+    # mask = cv2.erode(mask, None, iterations=2)
+    # mask = cv2.dilate(mask, None, iterations=2)
+
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    boxes = []
+    scores = []
+    x_w = None
+    y_w = None
+    for contour in contours:
+        x, y, w, h = cv2.boundingRect(contour)
+        if h > 3:
+            area = w * h
+            boxes.append([x, y, x + w, y + h])
+            scores.append(area)
+
+    selected_boxes = non_maximum_suppression(boxes, scores)
+    if len(selected_boxes) == 0:
+        return x_w, y_w, None
+
+    (x1, y1, x2, y2) = selected_boxes[0]
+    pixel_height = y2 - y1
+    distance = estimate_distance(pixel_height)
+    x_pixel = (x1+x2)/2
+    y_pixel = (y1+y2)/2
+    x_w = distance * (x_pixel-image_size / 2) / focal_length
+    y_w = distance * (y_pixel-image_size / 2) / focal_length
+    # print(x_w,y_w,distance)
+    return x_w, y_w, distance
+
 
 def check_distance(position1,position2):
     return ((position1.x-position2.x)**2+(position1.y-position2.y)**2+(position1.z-position2.z)**2)**0.5

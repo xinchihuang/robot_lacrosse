@@ -3,7 +3,7 @@ from scripts.arm_control.arm_manager import Arm
 import random
 def start_server():
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.bind(('0.0.0.0', 12345))  # Bind to all interfaces on port 12345
+    server_socket.bind(('192.168.0.102', 12345))  # Bind to all interfaces on port 12345
     server_socket.listen(5)
     print("Server is listening for connections...")
 
