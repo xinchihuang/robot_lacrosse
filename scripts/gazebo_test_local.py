@@ -94,10 +94,10 @@ class Robot:
         self.reset_topic = rospy.Subscriber(f'/{self.robot_name}/command', String, self.reset_callback,
                                               queue_size=1)
         self.move_topic = rospy.Subscriber("/gazebo/model_states", ModelStates, self.move_callback, queue_size=1)
-        # self.target_topic = rospy.Subscriber(f'/{self.robot_name}/image_raw', Image, self.local_controller,
-        #                                      queue_size=1)
-        self.target_topic = rospy.Subscriber("/gazebo/model_states", ModelStates, self.simulate_local_controller,
+        self.target_topic = rospy.Subscriber(f'/{self.robot_name}/image_raw', Image, self.local_controller,
                                              queue_size=1)
+        # self.target_topic = rospy.Subscriber("/gazebo/model_states", ModelStates, self.simulate_local_controller,
+        #                                      queue_size=1)
 
 
         self.pub_arm = rospy.Publisher(f'/{self.robot_name}/Arm_position_controller/command',
