@@ -11,8 +11,6 @@ def start_server():
     print("Server is listening for connections...")
     arm = Arm()
     arm.enable_motors()
-    chassis=RoboMasterExecutor()
-    robot=Robot(name=1,arm_executor=arm,chassis_executor=chassis)
 
     while True:
         client_socket, addr = server_socket.accept()
@@ -30,44 +28,9 @@ def start_server():
                     if mode == 'throw':
                         desired_speed = float(data_list[1])
                         desired_angle = float(data_list[2])
-                        distance = float(data_list[3])
-                        height = float(data_list[4])
-                        target_angle,target_speed=robot.get_arm_control_old(height=height,distance=distance)
-                        # print(target_angle,target_speed)
-                        arm_data = arm.throw_to_angle_with_speed(target_angle=target_angle, target_speed=target_speed)
+                        arm_data = arm.throw_to_angle_with_speed(target_angle=desired_angle, target_speed=desired_speed)
                         arm_data_str = str(arm_data)
                         # print(arm_data_str)
-                    elif mode == 'rotate':
-
-                        robot_self_pose_list = data_list[1].split(",")
-                        direction_pose_list = data_list[2].split(",")
-                        robot_self_pose = [float(i) for i in robot_self_pose_list]
-                        robot.robot_self_pose=robot_self_pose
-                        direction_pose = [float(i) for i in direction_pose_list]
-                        vx, vy, omega=robot.get_rotate_control(direction_pose)
-                        print(vx, vy, omega)
-                        # chassis.execute([vx, vy, omega])
-                    elif mode == 'catch':
-                        robot_self_pose_list = data_list[1].split(",")
-                        ball_memory_list = data_list[2].split(",")
-                        robot_self_pose = [float(i) for i in robot_self_pose_list]
-                        robot.robot_self_pose = robot_self_pose
-                        ball_memory=[]
-                        for i in range(0,len(ball_memory_list),3):
-                            ball_pose=[float(ball_memory_list[i]),float(ball_memory_list[i+1]),float(ball_memory_list[i+2])]
-                            ball_memory.append(ball_pose)
-                        vx, vy, omega=robot.get_move_control(ball_memory)
-                        print(vx, vy, omega)
-                    #     chassis.execute([vx, vy, omega])
-                    # elif mode == 'idle':
-                    #     chassis.stop()
-                    # elif mode == 'reset':
-                    #     arm.reset_ball()
-                    # elif mode == 'stop':
-                    #     arm.stop()
-                    #     arm.bus.shutdown()
-                    #     chassis.stop()
-                        break  # Break the loop to close the client socket
 
                 except ValueError as ve:
                     print(f"Value error: {ve}")

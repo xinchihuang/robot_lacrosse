@@ -14,6 +14,13 @@ import numpy as np
 from utils import *
 from throw_ml import *
 import signal
+class FakeExecutor:
+    def __init__(self):
+        pass
+    def execute(self,control):
+        pass
+    def stop(self):
+        pass
 def my_parse_args(arg_list, args_dict):
     # set up base values
     arg_list_len=len(arg_list)
@@ -362,7 +369,7 @@ if __name__ == "__main__":
     # robot2_chassis_executor = RoboMasterExecutor(sn="3JKCH7T00100M9")
     # robot2_arm_executor = ArmExecutor(('192.168.0.104', 12345))
 
-    robot1_chassis_executor=None
+    robot1_chassis_executor=FakeExecutor()
     # robot1_arm_executor = None
     # robot2_chassis_executor = None
     # robot2_arm_executor=None
