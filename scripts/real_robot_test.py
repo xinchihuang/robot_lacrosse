@@ -78,7 +78,7 @@ class Experiment:
         self.g=9.8
 
         self.throw_starts_time=time.time()
-        self.model=SimpleMLP(input_dim=2, hidden_dim=20, output_dim=2)
+        self.model=SimpleMLP(input_dim=2, hidden_dim=100, output_dim=2)
         self.model.load_state_dict(torch.load("save_model_throw.pth"))
 
         ##save_related
@@ -357,12 +357,12 @@ class Experiment:
 if __name__ == "__main__":
     # ball_launcher_chassis_executor = None
     # ball_launcher_arm_executor = LauncherExecutor(('192.168.0.106', 12345))
-    robot1_chassis_executor=RoboMasterExecutor(sn="3JKCH8800101C2")
+    # robot1_chassis_executor=RoboMasterExecutor(sn="3JKCH8800101C2")
     robot1_arm_executor = ArmExecutor(('192.168.0.105', 12345))
-    robot2_chassis_executor = RoboMasterExecutor(sn="3JKCH7T00100M9")
-    robot2_arm_executor = ArmExecutor(('192.168.0.104', 12345))
+    # robot2_chassis_executor = RoboMasterExecutor(sn="3JKCH7T00100M9")
+    # robot2_arm_executor = ArmExecutor(('192.168.0.104', 12345))
 
-    # robot1_chassis_executor=None
+    robot1_chassis_executor=None
     # robot1_arm_executor = None
     # robot2_chassis_executor = None
     # robot2_arm_executor=None
@@ -370,11 +370,11 @@ if __name__ == "__main__":
 
     # launcher = Launcher('0', ball_launcher_chassis_executor, ball_launcher_arm_executor)
     robot1 = Robot('1', robot1_chassis_executor, robot1_arm_executor)
-    robot2 = Robot('2', robot2_chassis_executor, robot2_arm_executor)
+    # robot2 = Robot('2', robot2_chassis_executor, robot2_arm_executor)
     experiment=Experiment()
     # experiment.robot_list.append(launcher)
     experiment.robot_list.append(robot1)
-    experiment.robot_list.append(robot2)
+    # experiment.robot_list.append(robot2)
     #
     optionsDict = {}
     optionsDict["clientAddress"] = "127.0.0.1"

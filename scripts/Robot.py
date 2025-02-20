@@ -13,9 +13,9 @@ class Robot:
         self.arm_executor = arm_executor
         self.chassis_model = DynamicLSTM(input_dim=2, hidden_dim=20, output_dim=1,
                             num_layers=2)  # Initialize the same model structure
-        self.chassis_model.load_state_dict(torch.load("scripts/save_model.pth"))
+        self.chassis_model.load_state_dict(torch.load("save_model.pth"))
         self.arm_model = SimpleMLP(input_dim=2, hidden_dim=100, output_dim=2)
-        self.arm_model.load_state_dict(torch.load("scripts/save_model_throw.pth"))
+        self.arm_model.load_state_dict(torch.load("save_model_throw.pth"))
 
         # General Settings
         self.g = 9.8

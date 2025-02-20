@@ -165,7 +165,7 @@ class Experiment:
                         desired_angle, desired_speed = cal_angle_speed(self.throw_h, distance)
                         desired_angle=35
                         desired_speed=30
-                        robot.send_arm_data(desired_angle, desired_speed)
+                        robot.send_arm_data(desired_angle, desired_speed,distance,self.throw_h)
                         self.saved_arm_input = [1, desired_angle, desired_speed]
                 else:
                     thrower=None
@@ -255,7 +255,7 @@ class Experiment:
         elif self.state == "idle":
             for robot in self.robot_list:
                 robot.robot_state = "idle"
-                robot.stop()
+                # robot.stop()
 
     def process_optitrack_ball_data(self, mocap_data):
         """
@@ -343,11 +343,11 @@ class Experiment:
         for robot in self.robot_list:
             robot.stop()
 def mock_test():
-    robot1 = RobotServer(('192.168.0.105', 12345))
+    # robot1 = RobotServer(('192.168.0.105', 12345))
     robot2 = RobotServer(('192.168.0.104', 12345))
     experiment = Experiment()
     # experiment.robot_list.append(launcher)
-    experiment.robot_list.append(robot1)
+    # experiment.robot_list.append(robot1)
     experiment.robot_list.append(robot2)
     #
     optionsDict = {}
@@ -389,11 +389,11 @@ def mock_test():
     signal.signal(signal.SIGINT, stop_handler)
 if __name__ == "__main__":
 
-    robot1 = RobotServer(('192.168.0.105', 12345))
-    robot2 = RobotServer(('192.168.0.104', 12345))
+    # robot1 = RobotServer(('192.168.0.105', 12345))
+    robot2 = RobotServer('2',('192.168.0.104', 12345))
     experiment=Experiment()
     # experiment.robot_list.append(launcher)
-    experiment.robot_list.append(robot1)
+    # experiment.robot_list.append(robot1)
     experiment.robot_list.append(robot2)
     #
     optionsDict = {}
