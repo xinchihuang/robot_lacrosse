@@ -28,6 +28,7 @@ def start_server():
                     if mode == 'throw':
                         desired_speed = float(data_list[1])
                         desired_angle = float(data_list[2])
+                        print(desired_speed, desired_angle)
                         arm_data = arm.throw_to_angle_with_speed(target_angle=desired_angle, target_speed=desired_speed)
                         arm_data_str = str(arm_data)
                         # print(arm_data_str)
