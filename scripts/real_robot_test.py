@@ -156,6 +156,7 @@ class Experiment:
                         min_angle, max_angle, min_vel, max_vel = 25, 35, 29, 31
                         residual = linear_mapping(output.squeeze().detach().numpy()[0], 0, 1.0, min_angle,
                                                          max_angle)
+                        # desired_angle = desired_angle + residual
                         desired_angle = desired_angle + residual
                         desired_speed = 30
                         thrower.arm_throw_ball(desired_angle, desired_speed)
@@ -264,7 +265,7 @@ class Experiment:
                     vx, vy, omega = robot.get_move_control(self.ball_memory[:self.check_point_window_size])
                     save_robot_data=[float(robot.name),robot.robot_self_pose[0],robot.robot_self_pose[1],robot.robot_self_pose[2],robot.robot_self_pose[3]]
                     self.saved_robot_data.append(save_robot_data)
-                    # print(robot.robot_self_pose,vx,vy,omega)
+                    print(robot.robot_self_pose,vx,vy,omega)
                     # print(vx,vy,omega)
                     # print(time.time()-self.throw_starts_time)
                     robot.execute(vx, vy, omega)
@@ -364,12 +365,12 @@ class Experiment:
 if __name__ == "__main__":
     # ball_launcher_chassis_executor = None
     # ball_launcher_arm_executor = LauncherExecutor(('192.168.0.106', 12345))
-    # robot1_chassis_executor=RoboMasterExecutor(sn="3JKCH8800101C2")
+    robot1_chassis_executor=RoboMasterExecutor(sn="3JKCH8800101C2")
     robot1_arm_executor = ArmExecutor(('192.168.0.105', 12345))
-    # robot2_chassis_executor = RoboMasterExecutor(sn="3JKCH7T00100M9")
-    # robot2_arm_executor = ArmExecutor(('192.168.0.104', 12345))
+    robot2_chassis_executor = RoboMasterExecutor(sn="3JKCH7T00100M9")
+    robot2_arm_executor = ArmExecutor(('192.168.0.104', 12345))
 
-    robot1_chassis_executor=FakeExecutor()
+    # robot1_chassis_executor=FakeExecutor()
     # robot1_arm_executor = None
     # robot2_chassis_executor = None
     # robot2_arm_executor=None
@@ -377,11 +378,11 @@ if __name__ == "__main__":
 
     # launcher = Launcher('0', ball_launcher_chassis_executor, ball_launcher_arm_executor)
     robot1 = Robot('1', robot1_chassis_executor, robot1_arm_executor)
-    # robot2 = Robot('2', robot2_chassis_executor, robot2_arm_executor)
+    robot2 = Robot('2', robot2_chassis_executor, robot2_arm_executor)
     experiment=Experiment()
     # experiment.robot_list.append(launcher)
     experiment.robot_list.append(robot1)
-    # experiment.robot_list.append(robot2)
+    experiment.robot_list.append(robot2)
     #
     optionsDict = {}
     optionsDict["clientAddress"] = "127.0.0.1"

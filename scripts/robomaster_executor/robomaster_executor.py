@@ -18,7 +18,7 @@ from robomaster import robot
 class  RoboMasterExecutor:
     def __init__(self,sn=None):
         self.ep_robot = robot.Robot()
-        self.ep_robot.initialize(conn_type="rndis",sn=sn)
+        self.ep_robot.initialize(conn_type="sta",sn=sn)
         self.ep_chassis = self.ep_robot.chassis
         self.max_speed=3.5
         self.max_rotation_speed=30
