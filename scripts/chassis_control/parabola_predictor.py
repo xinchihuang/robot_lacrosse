@@ -143,8 +143,6 @@ class ParabolaFitterRansac(ParabolaFitter):
             1 + m ** 2)
         return [(x1_m, y1_m + intercept), (x2_m, y2_m + intercept)]
 
-
-
 class ParabolaFitterLSTM(ParabolaFitter):
     def __init__(self, model_path,number_of_points):
         super().__init__(model_path)

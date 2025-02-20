@@ -17,9 +17,7 @@ import json
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 import cv2
-from utils import rotate_matrix_coordinate,calculate_rotation_angle,detect_ball,check_distance,detect_ball,detect_ball_3D
-# from scripts.utils import detect_ball
-# from scripts.utils import detect_ball_3D
+from utils import rotate_matrix_coordinate,calculate_rotation_angle,detect_ball,check_distance
 
 
 class Command:
@@ -75,7 +73,7 @@ class Robot:
         self.camera_bias=[0.0,0,0.0]
         self.camera_rpy = [0, -0.785, 0.0]
         self.arm_pose = [-0.2, 0, 0.3]
-        self.skip_frame=30
+        self.skip_frame=100
         self.min_frame_count=10
 
         self.save=False
@@ -96,9 +94,7 @@ class Robot:
         self.reset_topic = rospy.Subscriber(f'/{self.robot_name}/command', String, self.reset_callback,
                                               queue_size=1)
         self.move_topic = rospy.Subscriber("/gazebo/model_states", ModelStates, self.move_callback, queue_size=1)
-        # self.target_topic = rospy.Subscriber(f'/{self.robot_name}/image_raw', Image, self.local_controller,
-        #                                      queue_size=1)
-        self.target_topic = rospy.Subscriber(f'/{self.robot_name}/image_raw', Image, self.local_controller_depth,
+        self.target_topic = rospy.Subscriber(f'/{self.robot_name}/image_raw', Image, self.local_controller,
                                              queue_size=1)
         # self.target_topic = rospy.Subscriber("/gazebo/model_states", ModelStates, self.simulate_local_controller,
         #                                      queue_size=1)
@@ -221,7 +217,7 @@ class Robot:
                 #                    0, self.robot_pose[3] + time_step]
                 x_c = (x_pixel - self.cx) / self.fx
                 y_c = (y_pixel - self.cy) / self.fy
-                # print(x_c,y_c)
+
                 if self.frame_count>self.skip_frame:
                      self.ball_memory.append([x_c,y_c,present_time])
                 if len(self.ball_memory)>self.min_frame_count:
@@ -279,100 +275,17 @@ class Robot:
                     vy= min(abs(distance_y)*1,1)*self.max_speed*(distance_y)/abs(distance_y)
                     self.move_msg=[vx,vy,0]
 
-
-        except:
-            self.move_msg = [0, 0, 0]
-    def local_controller_depth(self,data):
-
-        present_time = rospy.Time.now().to_sec()
-        time_step=present_time-self.robot_pose[3]
-
-        # Camera Intrinsic
-        x_c, y_c, d_c=detect_ball_3D(data)
-        try:
-            if x_c==None:
-                self.ball_memory=[]
-                self.frame_count=0
-                self.robot_pose_initial = self.robot_pose_global
-                self.robot_pose=[0,0,0,0]
-            elif not x_c==None:
-                self.frame_count+=1
-                # print(self.frame_count)
-
-                self.robot_pose = [self.robot_pose[0]+self.move_msg[0]*time_step, self.robot_pose[1]+self.move_msg[1]*time_step,
-                                   self.robot_pose[2]+self.move_msg[2]*time_step,self.robot_pose[3]+time_step]
-                # robot_theta = self.robot_pose_global[2]
-                # # print(math.degrees(robot_theta))
-                # rotate_matrix = rotate_matrix_coordinate(0, 0, math.degrees(robot_theta))
-                # robot_local = rotate_matrix @ np.array([self.robot_pose_global[0],self.robot_pose_global[1],0])
-                # robot_local_initial = rotate_matrix @ np.array([self.robot_pose_initial[0],self.robot_pose_initial[1],0])
-                # self.robot_pose = [robot_local[0] - robot_local_initial[0],
-                #                    robot_local[1] - robot_local_initial[1],
-                #                    0, self.robot_pose[3] + time_step]
-
-                # print(x_c,y_c)
-                if self.frame_count>self.skip_frame:
-                     self.ball_memory.append([x_c,y_c,d_c,present_time])
-                if len(self.ball_memory)>self.min_frame_count:
-                    # self.ball_memory.append([x_c, y_c, d_c, present_time])
-                    # if len(self.ball_memory) >self.min_frame_count:
-                    #     self.ball_memory.pop(0)
-                    # print(len(self.ball_memory))
-                    t_start=self.ball_memory[0][3]
-                    g_x=0
-                    g_y=self.g*math.cos(math.pi/4)
-                    g_z=-self.g*math.sin(math.pi/4)
-                    A=[]
-                    B=[]
-                    camera_angle=-self.camera_rpy[1]
-                    for i in range(len(self.ball_memory)):
-                        t=self.ball_memory[i][3] - t_start
-                        # print(t)
-                        # alpha=(self.ball_memory[i][0]+self.robot_pose[1])/(1+self.robot_pose[0]*math.cos(camera_angle))
-                        # beta=(self.ball_memory[i][1]+self.robot_pose[0]*math.sin(camera_angle))/(1+self.robot_pose[0]*math.cos(camera_angle))
-                        # alpha=self.ball_memory[i][0]
-                        # beta=self.ball_memory[i][1]
-                        # theta=self.ball_memory[i][2]
-                        A.append([1, t, 0, 0, 0, 0])
-                        A.append([0, 0, 1, t, 0, 0])
-                        A.append([0, 0, 0, 0, 1, t])
-                        # B.append([0.5 * t * t * (g_z * alpha - g_x)])
-                        # B.append([0.5 * t * t * (g_z * beta - g_y)])
-                        B.append([self.ball_memory[i][0]-0.5 * t * t * g_x - self.robot_pose[1]])
-                        B.append([self.ball_memory[i][1]-0.5 * t * t * g_y + self.robot_pose[0]*math.sin(math.pi/4)])
-                        B.append([self.ball_memory[i][2]-0.5 * t * t * g_z + (-self.robot_pose[0] * math.cos(math.pi / 4))])
-
-
-                    A_array = np.array(A)
-                    B_array = np.array(B)
-                    pseudo_inverse_A = np.linalg.pinv(A_array)
-                    solved_parameters= pseudo_inverse_A@B_array
-
-                    x0_c,vx_c,y0_c,vy_c,z0_c,vz_c = solved_parameters[0][0],solved_parameters[1][0],solved_parameters[2][0],solved_parameters[3][0],solved_parameters[4][0],solved_parameters[5][0]
-
-                    rotate_matrix=rotate_matrix_coordinate(45,0,90)
-                    ball_position_c=np.array([x0_c,y0_c,z0_c])
-                    ball_velocity_c=np.array([vx_c,vy_c,vz_c])
-                    ball_position_w=rotate_matrix@ball_position_c
-                    ball_velocity_w=rotate_matrix@ball_velocity_c
-                    x_ball_w,y_ball_w,z_ball_w=ball_position_w[0],ball_position_w[1],ball_position_w[2]
-                    vx_ball_w,vy_ball_w,vz_ball_w=ball_velocity_w[0],ball_velocity_w[1],ball_velocity_w[2]
-                    x_ball_w=x_ball_w+self.camera_bias[0]
-                    z_ball_w=z_ball_w+self.camera_bias[2]
-                    target_x = 0
-                    target_y = 0
-
-                    if vz_ball_w**2 - (z_ball_w-self.arm_pose[2]) * (-self.g)*2 >0:
-                        drop_t = (-vz_ball_w - math.sqrt(vz_ball_w**2 - (z_ball_w-self.arm_pose[2]) * (-self.g)*2 )) / (-self.g)
-                        target_x = x_ball_w + drop_t * vx_ball_w - self.arm_pose[0]
-                        target_y = y_ball_w + drop_t * vy_ball_w - self.arm_pose[1]
-                    distance_x = target_x - self.robot_pose[0]
-                    distance_y = target_y - self.robot_pose[1]
-                    vx= min(abs(distance_x)*1,1)*self.max_speed*(distance_x)/abs(distance_x)
-                    vy= min(abs(distance_y)*1,1)*self.max_speed*(distance_y)/abs(distance_y)
-                    self.move_msg=[vx,vy,0]
-                    # if self.robot_name=="robot1":
-                    #     print(distance_x,distance_y,self.move_msg)
+                    # if self.robot_name == "robot2":
+                        # print(solved_parameters.T)
+                        # print("velocity",[vx, vy, 0])
+                        # print(self.ball_memory[-1])
+                        # print(self.ball_memory[-1][2] - t_start)
+                        # print(x_pixel, y_pixel)
+                        # print(target_x+self.arm_pose[0],target_y+self.arm_pose[1])
+                        # print(ball_velocity_w)
+                        # print(self.robot_pose)
+                        # print(self.robot_pose_global)
+                        # print(self.robot_pose_initial)
 
         except:
             self.move_msg = [0, 0, 0]
@@ -507,7 +420,25 @@ class Robot:
             distance_y = self.move_target[1] - self.robot_pose[1]
             vx = min(abs(distance_x) * 1, 1) * self.max_speed * (distance_x) / abs(distance_x)
             vy = min(abs(distance_y) * 1, 1) * self.max_speed * (distance_y) / abs(distance_y)
-
+            # if self.robot_name == "robot1":
+                # print(x_ball_w, y_ball_w, z_ball_w)
+                # print(relative_w)
+                # print([relative_x_w, relative_y_w,relative_z_w])
+                # print("velocity",[vx, vy, 0])
+                # print(self.ball_memory[-1])
+                # print(self.ball_memory[-1][2] - t_start)
+                # print(x_pixel, y_pixel)
+                # print(camera_coordinates_c)
+                # print(len(self.ball_memory))
+                # print(self.ball_memory[-1])
+                # print(target_x,target_y)
+                # print(ball_velocity_w)
+                # print(self.robot_pose)
+                # print(self.robot_pose_global)
+                # print(self.robot_pose_initial)
+                # print(self.robot_pose)
+                # print(self.move_target)
+                # print(self.move_msg)
             self.move_msg = [vx, vy, 0]
 
         except:
@@ -615,7 +546,7 @@ if __name__ == "__main__":
 
     initial_state1=Command()
     initial_state1.x = 0
-    initial_state1.y = 1
+    initial_state1.y = 0
     initial_state1.w = 0
     initial_state1.r1 = 0
     initial_state1.r2 = -90

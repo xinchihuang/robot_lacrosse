@@ -45,7 +45,8 @@ def start_server():
                         robot.robot_self_pose=robot_self_pose
                         direction_pose = [float(i) for i in direction_pose_list]
                         vx, vy, omega=robot.get_rotate_control(direction_pose)
-                        chassis.execute([vx, vy, omega])
+                        print(vx, vy, omega)
+                        # chassis.execute([vx, vy, omega])
                     elif mode == 'catch':
                         robot_self_pose_list = data_list[1].split(",")
                         ball_memory_list = data_list[2].split(",")
@@ -56,15 +57,16 @@ def start_server():
                             ball_pose=[float(ball_memory_list[i]),float(ball_memory_list[i+1]),float(ball_memory_list[i+2])]
                             ball_memory.append(ball_pose)
                         vx, vy, omega=robot.get_move_control(ball_memory)
-                        chassis.execute([vx, vy, omega])
-                    elif mode == 'idle':
-                        chassis.stop()
-                    elif mode == 'reset':
-                        arm.reset_ball()
-                    elif mode == 'stop':
-                        arm.stop()
-                        arm.bus.shutdown()
-                        chassis.stop()
+                        print(vx, vy, omega)
+                    #     chassis.execute([vx, vy, omega])
+                    # elif mode == 'idle':
+                    #     chassis.stop()
+                    # elif mode == 'reset':
+                    #     arm.reset_ball()
+                    # elif mode == 'stop':
+                    #     arm.stop()
+                    #     arm.bus.shutdown()
+                    #     chassis.stop()
                         break  # Break the loop to close the client socket
 
                 except ValueError as ve:

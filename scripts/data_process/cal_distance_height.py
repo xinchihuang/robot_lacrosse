@@ -1,3 +1,4 @@
+import math
 import os
 
 import numpy as np
@@ -7,14 +8,14 @@ from scipy.optimize import minimize
 from sympy import symbols, Eq, solve
 
 for i in range(10, 20):
-    if os.path.isfile(f'../saved_data/saved_ball_data/{i}.npy'):
+    if os.path.isfile(f'../saved_data/saved_ball_data_9_8/{i}.npy'):
 
         # 加载数据
 
-        arm_data=np.load(f'../saved_data/saved_arm_data/{i}.npy')
+        arm_data=np.load(f'../saved_data/saved_arm_data_9_8/{i}.npy')
         desired_angle=arm_data[1]
         desired_speed=arm_data[2]
-        data = np.load(f'../saved_data/saved_ball_data/{i}.npy')
+        data = np.load(f'../saved_data/saved_ball_data_9_8/{i}.npy')
 
 
         def filter_points(points, threshold=0.1):
@@ -128,4 +129,8 @@ for i in range(10, 20):
         distance =abs(np.sqrt(g**2 + 1)*(x1 - x2))
         # print(f"两个根的距离是：{distance}")
 
-        print(f"{i}\t{desired_angle}\t{desired_speed}\t{optimal_z}\t{distance}")
+
+        vx=math.sqrt(9.8*distance**2/8*optimal_z)
+        vz = math.sqrt(2 * 9.8 * optimal_z)
+
+        print(f"{i}\t{desired_angle}\t{desired_speed}\t{optimal_z}\t{distance}\t{vx}\t{vz}")
