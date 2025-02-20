@@ -20,7 +20,7 @@ def start_server():
                 data = client_socket.recv(10240)
                 if not data:
                     break
-                data_list = data.decode().split(";")
+                data_list = data.decode().split(",")
                 mode = data_list[0]
                 # arm_data_str = ''
                 print(mode)
@@ -32,6 +32,8 @@ def start_server():
                         arm_data = arm.throw_to_angle_with_speed(target_angle=desired_angle, target_speed=desired_speed)
                         arm_data_str = str(arm_data)
                         # print(arm_data_str)
+                    elif mode == 'reset':
+                        arm.reset_ball()
 
                 except ValueError as ve:
                     print(f"Value error: {ve}")
