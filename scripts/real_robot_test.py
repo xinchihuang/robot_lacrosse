@@ -14,6 +14,13 @@ import numpy as np
 from utils import *
 from throw_ml import *
 import signal
+class FakeExecutor:
+    def __init__(self):
+        pass
+    def execute(self,control):
+        pass
+    def stop(self):
+        pass
 def my_parse_args(arg_list, args_dict):
     # set up base values
     arg_list_len=len(arg_list)
@@ -78,7 +85,7 @@ class Experiment:
         self.g=9.8
 
         self.throw_starts_time=time.time()
-        self.model=SimpleMLP(input_dim=2, hidden_dim=20, output_dim=2)
+        self.model=SimpleMLP(input_dim=2, hidden_dim=100, output_dim=2)
         self.model.load_state_dict(torch.load("save_model_throw.pth"))
 
         ##save_related
@@ -149,6 +156,7 @@ class Experiment:
                         min_angle, max_angle, min_vel, max_vel = 25, 35, 29, 31
                         residual = linear_mapping(output.squeeze().detach().numpy()[0], 0, 1.0, min_angle,
                                                          max_angle)
+                        # desired_angle = desired_angle + residual
                         desired_angle = desired_angle + residual
                         desired_speed = 30
                         thrower.arm_throw_ball(desired_angle, desired_speed)
@@ -257,7 +265,7 @@ class Experiment:
                     vx, vy, omega = robot.get_move_control(self.ball_memory[:self.check_point_window_size])
                     save_robot_data=[float(robot.name),robot.robot_self_pose[0],robot.robot_self_pose[1],robot.robot_self_pose[2],robot.robot_self_pose[3]]
                     self.saved_robot_data.append(save_robot_data)
-                    # print(robot.robot_self_pose,vx,vy,omega)
+                    print(robot.robot_self_pose,vx,vy,omega)
                     # print(vx,vy,omega)
                     # print(time.time()-self.throw_starts_time)
                     robot.execute(vx, vy, omega)
@@ -386,7 +394,7 @@ if __name__ == "__main__":
     robot2_chassis_executor = RoboMasterExecutor(sn="3JKCH7T00100M9")
     robot2_arm_executor = ArmExecutor(('192.168.0.104', 12345))
 
-    # robot1_chassis_executor=None
+    # robot1_chassis_executor=FakeExecutor()
     # robot1_arm_executor = None
     # robot2_chassis_executor = None
     # robot2_arm_executor=None
