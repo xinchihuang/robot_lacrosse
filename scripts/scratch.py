@@ -1,53 +1,23 @@
-import socket
-import math
 import numpy as np
-class RobotServer:
-    def __init__(self,server_address):
-        self.robot_state=None
-        self.robot_self_pose=None
-        self.server_address =server_address
-        self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        # server_address = ('192.168.0.105', 12345)  # Replace <server_ip_address> with the server's IP address
-        self.client_socket.connect(self.server_address)
-        print("Connected to server.")
+import matplotlib.pyplot as plt
+data=[[0.0, 0.296, 6.3728], [0.002, 0.288, 6.3771], [0.004, 0.284, 6.3862], [0.006, 0.276, 6.3913], [0.006, 0.27, 6.3966], [0.008, 0.266, 6.4007], [0.01, 0.262, 6.4059], [0.01, 0.258, 6.4113], [0.012, 0.252, 6.417], [0.014, 0.248, 6.4239], [0.016, 0.24, 6.4315], [0.018, 0.232, 6.4368], [0.02, 0.228, 6.4407], [0.02, 0.224, 6.4457], [0.022, 0.218, 6.4514], [0.024, 0.212, 6.4589], [0.026, 0.204, 6.4652], [0.028, 0.2, 6.4721], [0.03, 0.192, 6.4784], [0.032, 0.186, 6.4824], [0.034, 0.182, 6.4846], [0.034, 0.178, 6.487], [0.036, 0.176, 6.4899000000000004], [0.036, 0.174, 6.4939], [0.038, 0.17, 6.498], [0.04, 0.164, 6.5023], [0.042, 0.16, 6.5071], [0.042, 0.154, 6.5092], [0.044, 0.152, 6.5141], [0.046, 0.148, 6.5183], [0.048, 0.142, 6.5222999999999995], [0.048, 0.138, 6.5274], [0.05, 0.136, 6.5294], [0.052, 0.13, 6.5364], [0.054, 0.124, 6.5386], [0.056, 0.12, 6.5402000000000005], [0.058, 0.116, 6.545], [0.06, 0.112, 6.5491], [0.06, 0.108, 6.5536], [0.062, 0.104, 6.5564], [0.064, 0.1, 6.5577], [0.066, 0.096, 6.5613], [0.066, 0.094, 6.5634], [0.068, 0.09, 6.5652], [0.07, 0.084, 6.5719], [0.072, 0.08, 6.5764], [0.074, 0.076, 6.5792], [0.076, 0.07, 6.5814], [0.078, 0.068, 6.5861], [0.08, 0.062, 6.5894], [0.082, 0.056, 6.5934], [0.086, 0.052, 6.5985], [0.088, 0.046, 6.6027000000000005], [0.09, 0.042, 6.6067], [0.092, 0.036, 6.6117], [0.094, 0.03, 6.6158], [0.098, 0.022, 6.6207], [0.1, 0.018, 6.6251], [0.104, 0.012, 6.6276], [0.106, 0.004, 6.6319], [0.11, -0.004, 6.6365], [0.114, -0.01, 6.6426], [0.116, -0.016, 6.6475], [0.122, -0.026, 6.6525], [0.126, -0.034, 6.657], [0.13, -0.042, 6.6621], [0.132, -0.048, 6.6667], [0.138, -0.058, 6.6712], [0.142, -0.068, 6.6754999999999995], [0.146, -0.074, 6.6801], [0.15, -0.082, 6.6845], [0.156, -0.09, 6.6888], [0.16, -0.1, 6.6937999999999995], [0.164, -0.108, 6.6958], [0.17, -0.116, 6.6987], [0.174, -0.124, 6.7036999999999995], [0.178, -0.132, 6.7082], [0.184, -0.142, 6.7135], [0.19, -0.152, 6.718], [0.194, -0.162, 6.7239], [0.2, -0.17, 6.7273], [0.206, -0.182, 6.7325], [0.214, -0.192, 6.7384], [0.218, -0.2, 6.743], [0.226, -0.214, 6.7494], [0.232, -0.226, 6.7545], [0.242, -0.24, 6.7591], [0.25, -0.256, 6.7637], [0.262, -0.276, 6.7696], [0.272, -0.29, 6.7743], [0.28, -0.306, 6.7793], [0.292, -0.324, 6.7831], [0.302, -0.338, 6.7875], [0.314, -0.358, 6.7895], [0.326, -0.378, 6.7918], [0.342, -0.404, 6.7977], [0.35, -0.416, 6.8027999999999995], [0.362, -0.432, 6.8082], [0.374, -0.452, 6.8131], [0.386, -0.472, 6.8185], [0.408, -0.504, 6.8236], [0.432, -0.54, 6.8294], [0.452, -0.57, 6.8328], [0.472, -0.6, 6.8353], [0.492, -0.63, 6.8407], [0.518, -0.67, 6.8457], [0.544, -0.708, 6.8517], [0.588, -0.776, 6.8568999999999996], [0.606, -0.802, 6.8619], [0.636, -0.846, 6.8663], [0.678, -0.908, 6.8711]]
+data_array = np.array(data)
+x = data_array[:,0]
+y = data_array[:,1]
 
-    def send_chassis_rotate_data(self,state,robot1_pose,robot2_pose):
-        robot1_pose_list = [round(num, 4) for num in robot1_pose]
-        robot1_pose_str = ','.join(map(str, robot1_pose_list))
-        robot2_pose_list = [round(num, 4) for num in robot2_pose]
-        robot2_pose_str = ','.join(map(str, robot2_pose_list))
-        command = f"{state};{robot1_pose_str};{robot2_pose_str}"
-        self.client_socket.sendall(command.encode())
-    def send_chassis_catch_data(self,state,robot1_pose,ball_memory):
-        # ball_memory_list=[round(num, 4) for num in ball_memory]
-        robot_pose_list=[round(num, 4) for num in robot1_pose]
-        robot_pose_str=','.join(map(str, robot_pose_list))
-        series_ball_memory=[]
-        for i in range(len(ball_memory)):
-            for j in range(len(ball_memory[i])):
-                series_ball_memory.append(round(ball_memory[i][j],4))
-        ball_memory_str=','.join(map(str, series_ball_memory))
-        command = f"{state};{robot_pose_str};{ball_memory_str}"
-        self.client_socket.sendall(command.encode())
-    def send_arm_data(self,desired_angle, desired_speed,distance,height):
-        command=f"throw;{desired_angle};{desired_speed};{distance};{height}"
-        self.client_socket.sendall(command.encode())
-    def reset_arm(self):
-        command = "reset"
-        self.client_socket.sendall(command.encode())
-    def stop_chassis(self):
-        command = "idle"
-        self.client_socket.sendall(command.encode())
-if __name__ == "__main__":
+# 2. 绘制散点图
+plt.scatter(x, y,
+            s=50,              # 点的大小
+            c='blue',          # 点的颜色
+            alpha=0.6,         # 透明度
+            marker='o',        # 散点形状
+            edgecolors='black' # 边框颜色
+           )
 
-    robot1_pose=[0,1,0.1,math.pi]
-    robot2_pose=[0,0,0.1,math.pi]
-    ball_memory=np.load('saved_ball_data/0.npy')
-    desired_angle=30
-    desired_speed=30
-    distance=2
-    height=1.5
-    # print(ball_memory)
-    robot_server=RobotServer(('192.168.1.172', 12345))
-    # robot_server.send_chassis_rotate_data("rotate",robot1_pose,robot2_pose)
-    robot_server.send_arm_data(desired_angle, desired_speed,distance,height)
+# 3. 添加标签和标题
+plt.xlabel("X 值")
+plt.ylabel("Y 值")
+plt.title("简单散点图示例")
+
+# 4. 显示图像
+plt.show()

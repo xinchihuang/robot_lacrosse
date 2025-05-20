@@ -268,6 +268,30 @@ class Experiment:
             for robot in self.robot_list:
                 robot.robot_state = "idle"
                 robot.execute(0, 0, 0)
+    def p_control(self, id, position, rotation,delta_position=(0,0,0)):
+        """
+
+        Args:
+            id: rigid body id
+            position: rigid body position
+            rotation: rigid body rotation
+
+        Returns:
+
+        """
+        # print(position)
+        for robot in self.robot_list:
+            if robot.name == str(id):
+                x_world, y_world, z_world, theta_world = optitrack_coordinate_to_world_coordinates(position, rotation)
+                robot.robot_self_pose = [x_world, y_world, z_world, theta_world]
+        if len(self.robot_list) == 1 and self.state == "p_control":
+            robot1 = self.robot_list[0]
+            if not robot1.robot_self_pose is None:
+                vx, vy, omega = robot1.get_p_control(delta_position)
+                robot1.execute(vx, vy, omega)
+
+
+
 
     def process_optitrack_ball_data(self, mocap_data):
         """

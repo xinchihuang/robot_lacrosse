@@ -66,6 +66,7 @@ def detect_ball(data):
     # Detect Ball
     bridge = CvBridge()
     cv_image = bridge.imgmsg_to_cv2(data, "bgr8")
+    # print(cv_image.shape)
     hsv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2HSV)
     lower_blue = np.array([100, 150, 50])
     upper_blue = np.array([140, 255, 255])

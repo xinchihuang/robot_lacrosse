@@ -42,6 +42,19 @@ class Robot:
                                            [landing_target_x, landing_target_y], 0)
 
         return vx, vy, omega
+    def get_p_control(self,delta_position,k_p=1):
+        # delta_position = [delta_position[0] - self.robot_self_pose[0], delta_position[1] - self.robot_self_pose[1]]
+        # delta_position = [delta_position[0], delta_position[1]]
+        # print(delta_position)
+        # print(self.robot_self_pose)
+        d_x= delta_position[0] - self.robot_self_pose[0]
+        d_y= delta_position[1] - self.robot_self_pose[1]
+        d_omega= delta_position[3] - self.robot_self_pose[3]
+        # print(d_x,d_y)
+        vx = k_p * d_x
+        vy = k_p * d_y
+        omega = k_p * d_omega
+        return vx, vy, omega
     def get_rotate_control(self,direction_pose):
         target_direction = [direction_pose[0] - self.robot_self_pose[0],
                             direction_pose[1] - self.robot_self_pose[1]]

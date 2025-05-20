@@ -18,7 +18,7 @@ from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 import cv2
 from utils import rotate_matrix_coordinate,calculate_rotation_angle,detect_ball,check_distance
-
+from parabola_fitter import *
 
 class Command:
     def __init__(self,state="idle",vx=0,vy=0,vw=0,r1=0,r2=-90,r3=180,target_x=0,target_y=0,rv1=0,rv2=0,rv3=0):
@@ -83,6 +83,9 @@ class Robot:
         self.fy = 500.39832201574455
         self.cx = 500.5
         self.cy = 500.5
+
+
+        self.parabola_fitter=ParabolaFitter(camera_rpy_to=[0,45,-90],camera_rpy_back=[-45,0,90])
 
 
 
@@ -188,7 +191,7 @@ class Robot:
         trajectory.points.append(point)
         self.pub_arm.publish(trajectory)
 
-    def local_controller(self,data):
+    def local_controller_old(self,data):
 
         present_time = rospy.Time.now().to_sec()
         time_step=present_time-self.robot_pose[3]
@@ -274,6 +277,63 @@ class Robot:
                     vx= min(abs(distance_x)*1,1)*self.max_speed*(distance_x)/abs(distance_x)
                     vy= min(abs(distance_y)*1,1)*self.max_speed*(distance_y)/abs(distance_y)
                     self.move_msg=[vx,vy,0]
+
+                    # if self.robot_name == "robot2":
+                        # print(solved_parameters.T)
+                        # print("velocity",[vx, vy, 0])
+                        # print(self.ball_memory[-1])
+                        # print(self.ball_memory[-1][2] - t_start)
+                        # print(x_pixel, y_pixel)
+                        # print(target_x+self.arm_pose[0],target_y+self.arm_pose[1])
+                        # print(ball_velocity_w)
+                        # print(self.robot_pose)
+                        # print(self.robot_pose_global)
+                        # print(self.robot_pose_initial)
+
+        except:
+            self.move_msg = [0, 0, 0]
+    def local_controller(self,data):
+
+        present_time = rospy.Time.now().to_sec()
+        time_step=present_time-self.robot_pose[3]
+
+        # Camera Intrinsic
+        x_pixel, y_pixel=detect_ball(data)
+        try:
+            if x_pixel==-1:
+                self.ball_memory=[]
+                self.frame_count=0
+                self.robot_pose_initial = self.robot_pose_global
+                self.robot_pose=[0,0,0,0]
+            elif not x_pixel==-1:
+                self.frame_count+=1
+                # print(self.frame_count)
+
+                self.robot_pose = [self.robot_pose[0]+self.move_msg[0]*time_step, self.robot_pose[1]+self.move_msg[1]*time_step,
+                                   self.robot_pose[2]+self.move_msg[2]*time_step,self.robot_pose[3]+time_step]
+                # robot_theta = self.robot_pose_global[2]
+                # # print(math.degrees(robot_theta))
+                # rotate_matrix = rotate_matrix_coordinate(0, 0, math.degrees(robot_theta))
+                # robot_local = rotate_matrix @ np.array([self.robot_pose_global[0],self.robot_pose_global[1],0])
+                # robot_local_initial = rotate_matrix @ np.array([self.robot_pose_initial[0],self.robot_pose_initial[1],0])
+                # self.robot_pose = [robot_local[0] - robot_local_initial[0],
+                #                    robot_local[1] - robot_local_initial[1],
+                #                    0, self.robot_pose[3] + time_step]
+                x_c = (x_pixel - self.cx) / self.fx
+                y_c = (y_pixel - self.cy) / self.fy
+                if self.frame_count>self.skip_frame:
+                     self.ball_memory.append([x_c,y_c,present_time])
+                if len(self.ball_memory)>self.min_frame_count:
+                    params=self.parabola_fitter.mono_fitter(self.ball_memory,self.robot_pose)
+                    # if vz_ball_w**2 - (z_ball_w-self.arm_pose[2]) * (-self.g)*2 >0:
+                    #     drop_t = (-vz_ball_w - math.sqrt(vz_ball_w**2 - (z_ball_w-self.arm_pose[2]) * (-self.g)*2 )) / (-self.g)
+                    #     target_x = x_ball_w + drop_t * vx_ball_w - self.arm_pose[0]
+                    #     target_y = y_ball_w + drop_t * vy_ball_w - self.arm_pose[1]
+                    # distance_x = target_x - self.robot_pose[0]
+                    # distance_y = target_y - self.robot_pose[1]
+                    # vx= min(abs(distance_x)*1,1)*self.max_speed*(distance_x)/abs(distance_x)
+                    # vy= min(abs(distance_y)*1,1)*self.max_speed*(distance_y)/abs(distance_y)
+                    # self.move_msg=[vx,vy,0]
 
                     # if self.robot_name == "robot2":
                         # print(solved_parameters.T)
