@@ -1,6 +1,13 @@
-# Robot Lacrosse
+# Mobile Manipulator For Robotic Lacrosse: Learning to Pass the Ball
 
 A ROS-based autonomous robot lacrosse system with intelligent ball catching, throwing, and trajectory prediction capabilities using machine learning models.
+
+## Demo
+
+📹 **Video Demo**: [Robot Lacrosse in Action](https://youtu.be/6cvI5YItgjk)
+
+![Robot Lacrosse System](images/robot_system_overview.png)
+*The complete robot lacrosse system in operation*
 
 ## Overview
 
